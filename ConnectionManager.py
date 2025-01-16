@@ -43,15 +43,14 @@ def HandlePayload(JsonData):
 def HandleConnection(ClientSocket, Address):
     print("Started thread for connection...")
     while (True):
-        time.sleep(0.1)
-        Data = ClientSocket.recv(4096)
+        Data = ClientSocket.recv(8192)
         StringData = Data.decode('utf-8')
 
         if (StringData == ""):
             continue
 
         JsonData = None
-        
+
         try:
             JsonData = json.loads(StringData)
         except:

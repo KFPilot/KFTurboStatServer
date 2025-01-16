@@ -7,6 +7,7 @@ import time
 import json
 import os
 import sqlite3
+import ast
 
 def GetPlayerID(ID):
     ID = str(ID)
@@ -82,6 +83,28 @@ class DatabaseManager:
         self.DatabaseCursor.execute("UPDATE "+SessionID+" SET status = '"+JsonPayload['result']+"' WHERE status IS 'InProgress'")
         self.DatabaseCursor.execute("UPDATE sessiontable SET status = '"+JsonPayload['result']+"' WHERE sessionid IS '"+SessionID+"'")
 
+        # Don't update player wins/losses if the game was aborted.
+        if JsonPayload['result'] == "Abort":
+            return
+
+        # Turn all the lists of participants in the rows into one set of participants.
+        PlayerList = set()
+        Result = self.DatabaseCursor.execute("SELECT players FROM "+SessionID).fetchall()
+        for PlayerIDListString in Result:
+            PlayerIDList = ast.literal_eval(PlayerIDListString[0])
+            for PlayerID in PlayerIDList:
+                PlayerList.add(PlayerID)
+
+        # Update win/lose counts for all participants.
+        if JsonPayload['result'] == "Win":
+            for Player in PlayerList:
+                Player = GetPlayerID(Player)
+                self.DatabaseCursor.execute("UPDATE playertable SET wincount = wincount + 1 WHERE playerid = '"+Player+"'")
+        else:
+            for Player in PlayerList:
+                Player = GetPlayerID(Player)
+                self.DatabaseCursor.execute("UPDATE playertable SET losecount = losecount + 1 WHERE playerid = '"+Player+"'")
+
     def ProcessWaveStartPayload(self, SessionID, JsonPayload):
         print(SessionID, JsonPayload)
         JsonPayload['status'] = "InProgress"
@@ -105,9 +128,19 @@ class DatabaseManager:
         StatsData = JsonPayload['stats']
         StatsData['wavenum'] = JsonPayload['wavenum']
         StatsData['sessionid'] = SessionID
+        StatsData['Deaths'] = 1 if JsonPayload['died'] else 0
         StatsData = FillStatsData(StatsData)
-        self.DatabaseCursor.execute("CREATE TABLE IF NOT EXISTS "+PlayerID+"(sessionid VARCHAR(255), wave INT(255), kills INT(255), kills_fp INT(255), kills_sc INT(255), damage INT(255), damage_fp INT(255), damage_sc INT(255), shotsfired INT(255), meleeswings INT(255), shotshit INT(255), shotsheadshot INT(255), reloads INT(255), heals INT(255), damagetaken INT(255))")
-        self.DatabaseCursor.execute("INSERT INTO "+PlayerID+" VALUES(:sessionid, :wavenum, :Kills, :KillsFP, :KillsSC, :Damage, :DamageFP, :DamageSC, :ShotsFired, :MeleeSwings, :ShotsHit, :ShotsHeadshot, :Reloads, :Heals, :DamageTaken)", StatsData)
+        self.DatabaseCursor.execute("CREATE TABLE IF NOT EXISTS "+PlayerID+"(sessionid VARCHAR(255), wave INT(255), kills INT(255), kills_fp INT(255), kills_sc INT(255), damage INT(255), damage_fp INT(255), damage_sc INT(255), shotsfired INT(255), meleeswings INT(255), shotshit INT(255), shotsheadshot INT(255), reloads INT(255), heals INT(255), damagetaken INT(255), deaths INT(255))")
+        self.DatabaseCursor.execute("INSERT INTO "+PlayerID+" VALUES(:sessionid, :wavenum, :Kills, :KillsFP, :KillsSC, :Damage, :DamageFP, :DamageSC, :ShotsFired, :MeleeSwings, :ShotsHit, :ShotsHeadshot, :Reloads, :Heals, :DamageTaken, :Deaths)", StatsData)
+        
+        PlayerData = { "deaths" : 0, "wincount" : 0, "losecount" : 0}
+        PlayerData['playerid'] = PlayerID
+        PlayerData['playername'] = JsonPayload['playername']
+        self.DatabaseCursor.execute("INSERT OR IGNORE INTO playertable VALUES(:playerid, :playername, :deaths, :wincount, :losecount)", PlayerData)
+        
+        if StatsData['Deaths'] == 1:
+            self.DatabaseCursor.execute("UPDATE playertable SET deaths = deaths + 1 WHERE playerid = '"+PlayerData['playerid']+"'")
+
 
 ########################################
 # CARD PAYLOADS
