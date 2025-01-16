@@ -1,0 +1,10 @@
+#Exclude all.
+/*
+
+#Necessary git files. 
+!.gitignore
+!README.md
+!changelog.md
+
+#Python files.
+!*.py
