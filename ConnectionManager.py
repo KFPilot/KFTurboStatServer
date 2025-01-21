@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 # Killing Floor Turbo Connection Manager
 # Spins up a Database Manager and manages incomming connections, routing payloads received to it.
 # I am not familiar with Python nor SQLite so this should only be used as an example implementation. 
