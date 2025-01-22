@@ -46,7 +46,8 @@ def GetSessionID(ID):
         LetterID = LetterID + chr(ord('A') + int(Char))
     return LetterID
 
-def ShutdownServer():
+def ShutdownServer(signal_received, frame):
+    print("Shutting down server...")
     ServerSocket.close()
     sys.exit(0)
 
@@ -85,10 +86,14 @@ def StartServer():
     while (True):
         (ClientSocket, Address) = ServerSocket.accept()
         print("Accepted connection...")
-        threading.Thread(target=HandleConnection, args=(ClientSocket, Address)).start()
+        ConnectionThread = threading.Thread(target=HandleConnection, args=(ClientSocket, Address))
+        ConnectionThread.daemon = True
+        ConnectionThread.start()
 
 try:
-    threading.Thread(target=StartServer).start()
+    ServerThread = threading.Thread(target=StartServer)
+    ServerThread.daemon = True
+    ServerThread.start()
 except: 
     ShutdownServer()
 
