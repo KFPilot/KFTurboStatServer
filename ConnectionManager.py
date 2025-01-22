@@ -1,6 +1,8 @@
+#!/usr/bin/env python3
+
 # Killing Floor Turbo Connection Manager
 # Spins up a Database Manager and manages incomming connections, routing payloads received to it.
-# I am not familiar with Python nor SQLite so this should only be used as an example implementation. 
+# I am not familiar with Python nor SQLite so this should only be used as an example implementation.
 # Distributed under the terms of the GPL-2.0 License.
 # For more information see https://github.com/KFPilot/KFTurbo.
 
@@ -13,15 +15,21 @@ import socketserver
 import threading
 from queue import Queue
 import DatabaseManager
-from argparse import ArgumentParser
+from argparse import ArgumentParser, ArgumentError
 
-parser = ArgumentParser()
-parser.add_argument("-p", "--port", dest="port",
-                    help="Port to bind to.", metavar="PORT")
-parser.add_argument("-c", "--con", dest="maxcon",
-                    help="Max number of connections for server socket.", metavar="CON", default=10)
+parser = ArgumentParser(description="Killing Floor Turbo Connection Manager. Spins up a Database Manager and manages incoming connections, routing payloads received to it.")
+parser.add_argument("-p", "--port", dest="port", type=int, required=True,
+                    help="Port to bind to (required).", metavar="PORT")
+parser.add_argument("-c", "--con", dest="maxcon", type=int,
+                    help="Max number of connections for the server socket. Default is 10.", metavar="CON", default=10)
 
-args = parser.parse_args()
+try:
+    args = parser.parse_args()
+except SystemExit as e:
+    # Handle invalid or missing arguments
+    if e.code != 0:  # Non-zero exit code means an error
+        print("\nError: Missing required arguments or invalid inputs.")
+        exit(1)
 
 PayloadList = Queue()
 
@@ -63,7 +71,7 @@ def HandleConnection(ClientSocket, Address):
             JsonData = json.loads(StringData)
         except:
             print("Error attempting to decode data.")
-        
+
         if (JsonData == None):
             continue
 

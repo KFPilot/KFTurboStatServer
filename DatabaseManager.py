@@ -42,7 +42,8 @@ PerSessionTable = """
 
 class DatabaseManager:
     def __init__(self):
-        self.Database = sqlite3.connect("TurboDatabase.db",autocommit=True)
+        self.Database = sqlite3.connect("TurboDatabase.db")
+        self.Database.isolation_level = None # Autocommit mode
         self.DatabaseCursor = self.Database.cursor()
 
         # Generate master tables.
