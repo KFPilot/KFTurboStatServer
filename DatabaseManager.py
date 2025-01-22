@@ -29,7 +29,8 @@ def FillStatsData(StatsData):
 
 class DatabaseManager:
     def __init__(self):
-        self.Database = sqlite3.connect("TurboDatabase.db",autocommit=True)
+        self.Database = sqlite3.connect("TurboDatabase.db")
+        self.Database.isolation_level = None # Autocommit mode
         self.DatabaseCursor = self.Database.cursor()
         self.DatabaseCursor.execute("CREATE TABLE IF NOT EXISTS sessiontable(sessionid, version, gametype, status, map, time, UNIQUE(sessionid))")
         self.DatabaseCursor.execute("CREATE TABLE IF NOT EXISTS playertable(playerid, playername, deaths, wincount, losecount, UNIQUE(playerid))")
