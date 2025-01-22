@@ -159,7 +159,6 @@ class DatabaseManager:
         print(SessionID, JsonPayload)
         PlayerID = GetPlayerID(JsonPayload['player'])
         StatsData = JsonPayload['stats']
-        PlayerData['playerid'] = PlayerID
         StatsData['wavenum'] = JsonPayload['wavenum']
         StatsData['sessionid'] = SessionID
         StatsData['Deaths'] = 1 if JsonPayload['died'] else 0
@@ -168,6 +167,7 @@ class DatabaseManager:
         self.DatabaseCursor.execute("INSERT INTO "+PlayerID+" VALUES(:playerid, :sessionid, :wavenum, :Kills, :KillsFP, :KillsSC, :Damage, :DamageFP, :DamageSC, :ShotsFired, :MeleeSwings, :ShotsHit, :ShotsHeadshot, :Reloads, :Heals, :DamageTaken, :Deaths)", StatsData)
         
         PlayerData = { "deaths" : 0, "wincount" : 0, "losecount" : 0}
+        PlayerData['playerid'] = PlayerID
         PlayerData['playername'] = JsonPayload['playername']
         self.DatabaseCursor.execute("INSERT INTO playertable VALUES(:playerid, :playername, :deaths, :wincount, :losecount)", PlayerData)
         
