@@ -160,6 +160,7 @@ class DatabaseManager:
         PlayerID = GetPlayerID(JsonPayload['player'])
         StatsData = JsonPayload['stats']
         StatsData['wavenum'] = JsonPayload['wavenum']
+        StatsData['playerid'] = PlayerID
         StatsData['sessionid'] = SessionID
         StatsData['Deaths'] = 1 if JsonPayload['died'] else 0
         StatsData = FillStatsData(StatsData)
