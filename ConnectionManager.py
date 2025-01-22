@@ -4,7 +4,8 @@
 # Distributed under the terms of the GPL-2.0 License.
 # For more information see https://github.com/KFPilot/KFTurbo.
 
-import time
+import signal
+import sys
 import json
 import os
 import socket
@@ -36,6 +37,13 @@ def GetSessionID(ID):
     for Char in ID:
         LetterID = LetterID + chr(ord('A') + int(Char))
     return LetterID
+
+def ShutdownServer():
+    ServerSocket.close()
+    sys.exit(0)
+
+signal.signal(signal.SIGINT, ShutdownServer) 
+signal.signal(signal.SIGTERM, ShutdownServer)
 
 def HandlePayload(JsonData):
     Database.ProcessPayload(GetSessionID(abs(hash(JsonData['session']))), JsonData)
@@ -70,8 +78,11 @@ def StartServer():
         (ClientSocket, Address) = ServerSocket.accept()
         print("Accepted connection...")
         threading.Thread(target=HandleConnection, args=(ClientSocket, Address)).start()
-    
-threading.Thread(target=StartServer).start()
+
+try:
+    threading.Thread(target=StartServer).start()
+except: 
+    ShutdownServer()
 
 # Main thread watches queue populated by connection threads and tells the database manager about items as they're popped.
 while (True):
