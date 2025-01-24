@@ -58,31 +58,36 @@ def HandlePayload(JsonData):
     Database.ProcessPayload(GetSessionID(abs(hash(JsonData['session']))), JsonData)
 
 def HandleConnection(ClientSocket, Address):
-    print("Started thread for connection...")
-    while (True):
-        Data = ClientSocket.recv(8192)
-        StringData = Data.decode('utf-8')
+    print("Started thread for connection at "+str(Address))
+    try:
+        while (True):
+            Data = ClientSocket.recv(8192)
+            StringData = Data.decode('utf-8')
 
-        if (StringData == ""):
-            continue
+            if (StringData == ""):
+                continue
 
-        JsonData = None
+            JsonData = None
 
-        try:
-            JsonData = json.loads(StringData)
-        except:
-            print("Error attempting to decode data.")
+            try:
+                JsonData = json.loads(StringData)
+            except:
+                print("Error attempting to decode data.")
 
-        if (JsonData == None):
-            continue
+            if (JsonData == None):
+                continue
 
-        if ((not 'type' in JsonData) or (not 'session' in JsonData)):
-            print("Malformed data - missing payload type or session ID.")
-            continue
+            if ((not 'type' in JsonData) or (not 'session' in JsonData)):
+                print("Malformed data - missing payload type or session ID.")
+                continue
 
-        PayloadList.put(JsonData)
+            PayloadList.put(JsonData)
+    except:
+        print("Exception occurred for connection at "+str(Address))
+    print("Stopping thread for connection at "+str(Address))
 
 def StartServer():
+    print("Started server thread and waiting for connections...")
     while (True):
         (ClientSocket, Address) = ServerSocket.accept()
         print("Accepted connection...")
