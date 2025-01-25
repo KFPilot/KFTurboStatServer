@@ -64,6 +64,9 @@ def HandleConnection(ClientSocket, Address):
             Data = ClientSocket.recv(8192)
             StringData = Data.decode('utf-8')
 
+            if (StringData == "keepalive"):
+                continue
+
             if (StringData == ""):
                 continue
 
@@ -82,8 +85,8 @@ def HandleConnection(ClientSocket, Address):
                 continue
 
             PayloadList.put(JsonData)
-    except:
-        print("Exception occurred for connection at "+str(Address))
+    except Exception as Error:
+        print("Error "+str(Error)+" occurred for connection at "+str(Address))
     print("Stopping thread for connection at "+str(Address))
 
 def StartServer():
@@ -91,6 +94,7 @@ def StartServer():
     while (True):
         (ClientSocket, Address) = ServerSocket.accept()
         print("Accepted connection...")
+        ClientSocket.settimeout(30)
         ConnectionThread = threading.Thread(target=HandleConnection, args=(ClientSocket, Address))
         ConnectionThread.daemon = True
         ConnectionThread.start()
