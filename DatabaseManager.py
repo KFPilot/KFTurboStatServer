@@ -167,13 +167,14 @@ class DatabaseManager:
         self.DatabaseCursor.execute("CREATE TABLE IF NOT EXISTS "+PlayerID+PerPlayerTable)
         self.DatabaseCursor.execute("INSERT INTO "+PlayerID+" VALUES(:playerid, :sessionid, :wavenum, :Kills, :KillsFP, :KillsSC, :Damage, :DamageFP, :DamageSC, :ShotsFired, :MeleeSwings, :ShotsHit, :ShotsHeadshot, :Reloads, :Heals, :DamageTaken, :Deaths)", StatsData)
         
-        PlayerData = { "deaths" : 0, "wincount" : 0, "losecount" : 0}
-        PlayerData['playerid'] = PlayerID
-        PlayerData['playername'] = JsonPayload['playername']
-        self.DatabaseCursor.execute("INSERT INTO playertable VALUES(:playerid, :playername, :deaths, :wincount, :losecount)", PlayerData)
-        
-        if StatsData['Deaths'] == 1:
-            self.DatabaseCursor.execute("UPDATE playertable SET deaths = deaths + 1 WHERE playerid = '"+PlayerData['playerid']+"'")
+        PlayerData = { "playerid" : PlayerID, "playername" : JsonPayload['playername'], "deaths" : 0, "wincount" : 0, "losecount" : 0}
+        self.DatabaseCursor.execute(""""
+                                    INSERT INTO playertable (playerid, playername, deaths, wincount, losecount)
+                                    VALUES(:playerid, :playername, :deaths, :wincount, :losecount)
+                                    ON CONFLICT(playerid) DO UPDATE SET
+                                        playername = excluded.playername
+                                        deaths = playertable.deaths + excluded.deaths
+                                    """, PlayerData)
 
 
 ########################################
