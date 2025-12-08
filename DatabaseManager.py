@@ -127,12 +127,12 @@ class DatabaseManager:
             for PlayerID in PlayerIDList:
                 PlayerList.add(PlayerID)
 
-        # Update win/lose counts for all participants.
+        # Update win/lose counts for all participants. This value was rewritten above.
         if JsonPayload['result'] == "Win":
             for Player in PlayerList:
                 Player = GetPlayerID(Player)
                 self.DatabaseCursor.execute("UPDATE playertable SET wincount = wincount + 1 WHERE playerid = '"+Player+"'")
-        else:
+        elif JsonPayload['result'] == "Lose":
             for Player in PlayerList:
                 Player = GetPlayerID(Player)
                 self.DatabaseCursor.execute("UPDATE playertable SET losecount = losecount + 1 WHERE playerid = '"+Player+"'")
@@ -145,8 +145,8 @@ class DatabaseManager:
         self.DatabaseCursor.execute("INSERT INTO "+SessionID+" VALUES(:sessionid, :wavenum, :status, :playerlist)", JsonPayload)
 
         # In case we missed a ProcessWaveEndPayload.
-        if (JsonPayload['wavenum'] > 1):
-            self.DatabaseCursor.execute("UPDATE "+SessionID+" SET status = 'Complete' WHERE wave < "+str(JsonPayload['wavenum']))
+        if (int(JsonPayload['wavenum']) > 1):
+            self.DatabaseCursor.execute("UPDATE "+SessionID+" SET status = 'Complete' WHERE wave < "+ JsonPayload['wavenum'])
 
     def ProcessWaveEndPayload(self, SessionID, JsonPayload):
         print(SessionID, JsonPayload)
@@ -168,11 +168,11 @@ class DatabaseManager:
         self.DatabaseCursor.execute("INSERT INTO "+PlayerID+" VALUES(:playerid, :sessionid, :wavenum, :Kills, :KillsFP, :KillsSC, :Damage, :DamageFP, :DamageSC, :ShotsFired, :MeleeSwings, :ShotsHit, :ShotsHeadshot, :Reloads, :Heals, :DamageTaken, :Deaths)", StatsData)
         
         PlayerData = { "playerid" : PlayerID, "playername" : JsonPayload['playername'], "deaths" : 0, "wincount" : 0, "losecount" : 0}
-        self.DatabaseCursor.execute(""""
+        self.DatabaseCursor.execute("""
                                     INSERT INTO playertable (playerid, playername, deaths, wincount, losecount)
                                     VALUES(:playerid, :playername, :deaths, :wincount, :losecount)
                                     ON CONFLICT(playerid) DO UPDATE SET
-                                        playername = excluded.playername
+                                        playername = excluded.playername,
                                         deaths = playertable.deaths + excluded.deaths
                                     """, PlayerData)
 

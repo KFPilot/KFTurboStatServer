@@ -36,7 +36,7 @@ PayloadList = Queue()
 Database = DatabaseManager.DatabaseManager()
 
 ServerSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-ServerSocket.bind((socket.gethostname(), int(args.port)))
+ServerSocket.bind(("0.0.0.0", int(args.port)))
 ServerSocket.listen(int(args.maxcon))
 
 def GetSessionID(ID):
@@ -75,7 +75,8 @@ def HandleConnection(ClientSocket, Address):
             try:
                 JsonData = json.loads(StringData)
             except:
-                print("Error attempting to decode data.")
+                print("Error attempting to decode data:"+StringData)
+                continue
 
             if (JsonData == None):
                 continue
