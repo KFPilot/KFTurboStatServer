@@ -7,7 +7,6 @@ import time
 import json
 import os
 import sqlite3
-import ast
 
 def GetPlayerID(ID):
     ID = str(ID)
@@ -56,7 +55,7 @@ class DatabaseManager:
         
         self.DatabaseCursor.execute("""
             CREATE TABLE IF NOT EXISTS playertable
-            (playerid, playername, deaths, wincount, losecount,
+            (playerid, playertableid, playername, deaths, wincount, losecount,
             UNIQUE(playerid) ON CONFLICT IGNORE)
         """)
 
@@ -71,9 +70,16 @@ class DatabaseManager:
 ########################################
 # GAME PAYLOADS
 
+    def GetSessionID(self, SessionID):
+        if (int(SessionID) < 0):
+            SessionID = "A" + str(abs(int(SessionID)))
+        SessionID = "session_" + SessionID
+        return SessionID
+
     def ProcessPayload(self, SessionID, JsonPayload):
         # Sessions are prefixed with "session_"
-        SessionID = "session_" + SessionID
+        SessionID = self.GetSessionID(SessionID)
+        JsonPayload['session'] = SessionID
         # By default all sessions generate their own table.
         self.DatabaseCursor.execute("CREATE TABLE IF NOT EXISTS "+SessionID+PerSessionTable)
         match JsonPayload['type']:
@@ -93,17 +99,13 @@ class DatabaseManager:
                 self.ProcessCardGameEndPayload(SessionID, JsonPayload)
 
     def ProcessGameBeginPayload(self, SessionID, JsonPayload):
-        print(SessionID, JsonPayload)
+        #print(SessionID, JsonPayload)
         #Mutate this for preparation to be inserted into table.
-        SessionData = JsonPayload['session'].split("|")
-        JsonPayload['map'] = SessionData[1]
-        JsonPayload['time'] = SessionData[0]
-        JsonPayload['session'] = SessionID
         JsonPayload['status'] = "InProgress"
         self.DatabaseCursor.execute("INSERT INTO sessiontable VALUES(:session, :version, :gametype, :status, :map, :time)", JsonPayload)
 
     def ProcessGameEndPayload(self, SessionID, JsonPayload):
-        print(SessionID, JsonPayload)
+        #print(SessionID, JsonPayload)
         match JsonPayload['result']:
             case "won":
                 JsonPayload['result'] = "Win"
@@ -112,8 +114,8 @@ class DatabaseManager:
             case "aborted":
                 JsonPayload['result'] = "Abort"
 
-        self.DatabaseCursor.execute("UPDATE "+SessionID+" SET status = '"+JsonPayload['result']+"' WHERE status IS 'InProgress'")
-        self.DatabaseCursor.execute("UPDATE sessiontable SET status = '"+JsonPayload['result']+"' WHERE sessionid IS '"+SessionID+"'")
+        self.DatabaseCursor.execute("UPDATE "+SessionID+" SET status = ? WHERE status IS 'InProgress'", (JsonPayload['result'],))
+        self.DatabaseCursor.execute("UPDATE sessiontable SET status = ? WHERE sessionid IS ?", (JsonPayload['result'], SessionID))
 
         # Don't update player wins/losses if the game was aborted.
         if JsonPayload['result'] == "Abort":
@@ -123,7 +125,7 @@ class DatabaseManager:
         PlayerList = set()
         Result = self.DatabaseCursor.execute("SELECT players FROM "+SessionID).fetchall()
         for PlayerIDListString in Result:
-            PlayerIDList = ast.literal_eval(PlayerIDListString[0])
+            PlayerIDList = json.loads(PlayerIDListString[0])
             for PlayerID in PlayerIDList:
                 PlayerList.add(PlayerID)
 
@@ -131,17 +133,17 @@ class DatabaseManager:
         if JsonPayload['result'] == "Win":
             for Player in PlayerList:
                 Player = GetPlayerID(Player)
-                self.DatabaseCursor.execute("UPDATE playertable SET wincount = wincount + 1 WHERE playerid = '"+Player+"'")
+                self.DatabaseCursor.execute("UPDATE playertable SET wincount = wincount + 1 WHERE playerid = ?", (Player,))
         elif JsonPayload['result'] == "Lose":
             for Player in PlayerList:
                 Player = GetPlayerID(Player)
-                self.DatabaseCursor.execute("UPDATE playertable SET losecount = losecount + 1 WHERE playerid = '"+Player+"'")
+                self.DatabaseCursor.execute("UPDATE playertable SET losecount = losecount + 1 WHERE playerid = ?", (Player,))
 
     def ProcessWaveStartPayload(self, SessionID, JsonPayload):
         print(SessionID, JsonPayload)
         JsonPayload['sessionid'] = SessionID
         JsonPayload['status'] = "InProgress"
-        JsonPayload['playerlist'] = str(JsonPayload['playerlist'])
+        JsonPayload['playerlist'] = json.dumps(JsonPayload['playerlist'])
         self.DatabaseCursor.execute("INSERT INTO "+SessionID+" VALUES(:sessionid, :wavenum, :status, :playerlist)", JsonPayload)
 
         # In case we missed a ProcessWaveEndPayload.
@@ -156,21 +158,21 @@ class DatabaseManager:
 # PLAYER PAYLOADS
 
     def ProcessPlayerStatsPayload(self, SessionID, JsonPayload):
-        print(SessionID, JsonPayload)
-        PlayerID = GetPlayerID(JsonPayload['player'])
+        #print(SessionID, JsonPayload)
+        PlayerTableID = GetPlayerID(JsonPayload['player'])
         StatsData = JsonPayload['stats']
         StatsData['wavenum'] = JsonPayload['wavenum']
-        StatsData['playerid'] = PlayerID
+        StatsData['playerid'] = JsonPayload['player']
         StatsData['sessionid'] = SessionID
         StatsData['Deaths'] = 1 if JsonPayload['died'] else 0
         StatsData = FillStatsData(StatsData)
-        self.DatabaseCursor.execute("CREATE TABLE IF NOT EXISTS "+PlayerID+PerPlayerTable)
-        self.DatabaseCursor.execute("INSERT INTO "+PlayerID+" VALUES(:playerid, :sessionid, :wavenum, :Kills, :KillsFP, :KillsSC, :Damage, :DamageFP, :DamageSC, :ShotsFired, :MeleeSwings, :ShotsHit, :ShotsHeadshot, :Reloads, :Heals, :DamageTaken, :Deaths)", StatsData)
+        self.DatabaseCursor.execute("CREATE TABLE IF NOT EXISTS "+PlayerTableID+PerPlayerTable)
+        self.DatabaseCursor.execute("INSERT INTO "+PlayerTableID+" VALUES(:playerid, :sessionid, :wavenum, :Kills, :KillsFP, :KillsSC, :Damage, :DamageFP, :DamageSC, :ShotsFired, :MeleeSwings, :ShotsHit, :ShotsHeadshot, :Reloads, :Heals, :DamageTaken, :Deaths)", StatsData)
         
-        PlayerData = { "playerid" : PlayerID, "playername" : JsonPayload['playername'], "deaths" : 0, "wincount" : 0, "losecount" : 0}
+        PlayerData = { "playerid" : StatsData['playerid'], "playertableid" : PlayerTableID, "playername" : JsonPayload['playername'], "deaths" : StatsData['Deaths'], "wincount" : 0, "losecount" : 0}
         self.DatabaseCursor.execute("""
-                                    INSERT INTO playertable (playerid, playername, deaths, wincount, losecount)
-                                    VALUES(:playerid, :playername, :deaths, :wincount, :losecount)
+                                    INSERT INTO playertable (playerid, playertableid, playername, deaths, wincount, losecount)
+                                    VALUES(:playerid, :playertableid, :playername, :deaths, :wincount, :losecount)
                                     ON CONFLICT(playerid) DO UPDATE SET
                                         playername = excluded.playername,
                                         deaths = playertable.deaths + excluded.deaths
@@ -181,15 +183,15 @@ class DatabaseManager:
 # CARD PAYLOADS
 
     def ProcessCardVotePayload(self, SessionID, JsonPayload):
-        print(SessionID, JsonPayload)
+        #print(SessionID, JsonPayload)
         CardData = { "cardid" : "", "selectedcount": 0, "showncount" : 0, "wincount" : 0, "losecount" : 0}
         # Try to initialize rows from vote selection list.
         for card in JsonPayload['voteselection']:
             CardData['cardid'] = card
             self.DatabaseCursor.execute("INSERT INTO cardtable VALUES(:cardid, :selectedcount, :showncount, :wincount, :losecount)", CardData)
-            self.DatabaseCursor.execute("UPDATE cardtable SET showncount = showncount + 1 WHERE cardid = '"+card+"'")
-            
-        self.DatabaseCursor.execute("UPDATE cardtable SET selectedcount = selectedcount + 1 WHERE cardid = '"+JsonPayload['votedcard']+"'")
+            self.DatabaseCursor.execute("UPDATE cardtable SET showncount = showncount + 1 WHERE cardid = ?", (card,))
+
+        self.DatabaseCursor.execute("UPDATE cardtable SET selectedcount = selectedcount + 1 WHERE cardid = ?", (JsonPayload['votedcard'],))
         
     def ProcessCardGameEndPayload(self, SessionID, JsonPayload):
         print(SessionID, JsonPayload)
@@ -207,7 +209,7 @@ class DatabaseManager:
         for card in JsonPayload['activecards']:
             CardData['cardid'] = card
             self.DatabaseCursor.execute("INSERT INTO cardtable VALUES(:cardid, :selectedcount, :showncount, :wincount, :losecount)", CardData)
-            self.DatabaseCursor.execute("UPDATE cardtable SET "+IncrementKey+" = "+IncrementKey+" + 1 WHERE cardid = '"+card+"'")
+            self.DatabaseCursor.execute("UPDATE cardtable SET "+IncrementKey+" = "+IncrementKey+" + 1 WHERE cardid = ?", (card,))
 
 ########################################
 # MISC
@@ -215,6 +217,6 @@ class DatabaseManager:
     def CleanupPreviousSessions(self):
         Result = self.DatabaseCursor.execute("SELECT sessionid FROM sessiontable WHERE status IS 'InProgress'").fetchall()
         for SessionID in Result:
-            self.DatabaseCursor.execute("UPDATE sessiontable SET status = 'Ended' WHERE sessionid = '"+SessionID[0]+"'")
+            self.DatabaseCursor.execute("UPDATE sessiontable SET status = 'Ended' WHERE sessionid = ?", (SessionID[0],))
             self.DatabaseCursor.execute("UPDATE "+SessionID[0]+" SET status = 'Complete'")
 

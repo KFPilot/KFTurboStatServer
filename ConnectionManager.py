@@ -22,6 +22,7 @@ parser.add_argument("-p", "--port", dest="port", type=int, required=True,
                     help="Port to bind to (required).", metavar="PORT")
 parser.add_argument("-c", "--con", dest="maxcon", type=int,
                     help="Max number of connections for the server socket. Default is 10.", metavar="CON", default=10)
+parser.add_argument("-v", "--verbose", dest="verbose", type=bool, default=False)
 
 try:
     args = parser.parse_args()
@@ -39,13 +40,6 @@ ServerSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 ServerSocket.bind(("0.0.0.0", int(args.port)))
 ServerSocket.listen(int(args.maxcon))
 
-def GetSessionID(ID):
-    ID = str(ID)
-    LetterID = ""
-    for Char in ID:
-        LetterID = LetterID + chr(ord('A') + int(Char))
-    return LetterID
-
 def ShutdownServer(signal_received, frame):
     print("Shutting down server...")
     ServerSocket.close()
@@ -55,37 +49,49 @@ signal.signal(signal.SIGINT, ShutdownServer)
 signal.signal(signal.SIGTERM, ShutdownServer)
 
 def HandlePayload(JsonData):
-    Database.ProcessPayload(GetSessionID(abs(hash(JsonData['session']))), JsonData)
+    Database.ProcessPayload(JsonData['session'], JsonData)
 
 def HandleConnection(ClientSocket, Address):
     print("Started thread for connection at "+str(Address))
+    Buffer = ""
     try:
         while (True):
             Data = ClientSocket.recv(8192)
             StringData = Data.decode('utf-8')
 
-            if (StringData == "keepalive"):
-                continue
-
             if (StringData == ""):
-                continue
+                print("Breaking out of connection loop for "+str(Address))
+                break
 
-            JsonData = None
+            Buffer += StringData
+            Lines = Buffer.split("\r\n")
+            Buffer = Lines.pop()
 
-            try:
-                JsonData = json.loads(StringData)
-            except:
-                print("Error attempting to decode data:"+StringData)
-                continue
+            for Line in Lines:
+                Line = Line.strip()
 
-            if (JsonData == None):
-                continue
+                if (Line == "" or Line == "keepalive"):
+                    continue
 
-            if ((not 'type' in JsonData) or (not 'session' in JsonData)):
-                print("Malformed data - missing payload type or session ID.")
-                continue
+                if (args.verbose):
+                    print("RECEIVED: " + Line)
 
-            PayloadList.put(JsonData)
+                JsonData = None
+
+                try:
+                    JsonData = json.loads(Line)
+                except Exception:
+                    print("Error attempting to decode data:"+Line)
+                    continue
+
+                if (JsonData == None):
+                    continue
+
+                if ((not 'type' in JsonData) or (not 'session' in JsonData)):
+                    print("Malformed data - missing payload type or session ID.")
+                    continue
+
+                PayloadList.put(JsonData)
     except Exception as Error:
         print("Error "+str(Error)+" occurred for connection at "+str(Address))
     print("Stopping thread for connection at "+str(Address))
@@ -104,8 +110,8 @@ try:
     ServerThread = threading.Thread(target=StartServer)
     ServerThread.daemon = True
     ServerThread.start()
-except: 
-    ShutdownServer()
+except:
+    ShutdownServer(None, None)
 
 # Main thread watches queue populated by connection threads and tells the database manager about items as they're popped.
 while (True):
