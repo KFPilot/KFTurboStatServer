@@ -140,7 +140,7 @@ class DatabaseManager:
                 self.DatabaseCursor.execute("UPDATE playertable SET losecount = losecount + 1 WHERE playerid = ?", (Player,))
 
     def ProcessWaveStartPayload(self, SessionID, JsonPayload):
-        print(SessionID, JsonPayload)
+        #print(SessionID, JsonPayload)
         JsonPayload['sessionid'] = SessionID
         JsonPayload['status'] = "InProgress"
         JsonPayload['playerlist'] = json.dumps(JsonPayload['playerlist'])
@@ -151,7 +151,7 @@ class DatabaseManager:
             self.DatabaseCursor.execute("UPDATE "+SessionID+" SET status = 'Complete' WHERE wave < "+ JsonPayload['wavenum'])
 
     def ProcessWaveEndPayload(self, SessionID, JsonPayload):
-        print(SessionID, JsonPayload)
+        #print(SessionID, JsonPayload)
         self.DatabaseCursor.execute("UPDATE "+SessionID+" SET status = 'Complete'")
     
 ########################################
