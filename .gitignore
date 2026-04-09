@@ -1,10 +1,17 @@
 #Exclude all.
 /*
 
-#Necessary git files. 
+#Necessary git files.
 !.gitignore
 !README.md
 !changelog.md
+!LICENSE
+
+# Docker and packaging files.
+!Dockerfile
+!.dockerignore
+!docker-compose.yml
+!pyproject.toml
 
 #Python files.
 !*.py

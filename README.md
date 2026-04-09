@@ -19,7 +19,25 @@ py.exe .\ConnectionManager.py -p 10101 -c 5
 ./ConnectionManager.py -p 10101 -c 5
 ```
 
----
+## Docker
 
-**Security related note:**  
-On Linux, use ports **above 1024**, as ports **below 1024** require root permissions. Avoid running as root for obvious security reasons. Ensure proper firewall rules are in place to restrict access and prevent exposure to the entire internet.
+### Build image
+```bash
+docker build -t kfturbo-stat:local .
+```
+
+### Run with Docker
+```bash
+docker run --rm -p 10101:10101 kfturbo-stat:local
+```
+
+### Run with Docker Compose
+```bash
+docker compose up -d --build
+```
+
+Compose defaults:
+- `KF_LISTEN_PORT=10101`
+- `KF_MAX_CONNECTIONS=10`
+- `KF_STATS_DB_PATH=/app/data/TurboDatabase.db`
+- database persisted to `./data/TurboDatabase.db`

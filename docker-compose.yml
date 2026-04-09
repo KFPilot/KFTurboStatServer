@@ -1,0 +1,16 @@
+services:
+  kfturbo-stat:
+    build:
+      context: .
+    image: kfturbo-stat:local
+    container_name: kfturbo-stat
+    restart: unless-stopped
+    ports:
+      - "${KF_LISTEN_PORT:-10101}:${KF_LISTEN_PORT:-10101}/tcp"
+    environment:
+      KF_LISTEN_PORT: "${KF_LISTEN_PORT:-10101}"
+      KF_MAX_CONNECTIONS: "${KF_MAX_CONNECTIONS:-10}"
+      KF_STATS_DB_PATH: "/app/data/TurboDatabase.db"
+    command: sh -c "python ConnectionManager.py -p $${KF_LISTEN_PORT} -c $${KF_MAX_CONNECTIONS}"
+    volumes:
+      - ./data:/app/data

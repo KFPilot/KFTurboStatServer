@@ -1,0 +1,8 @@
+*
+!Dockerfile
+!.dockerignore
+!pyproject.toml
+!README.md
+!LICENSE
+!ConnectionManager.py
+!DatabaseManager.py
