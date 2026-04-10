@@ -29,7 +29,7 @@ def FillStatsData(StatsData):
 
 PerPlayerTable = """
     (playerid VARCHAR(255), sessionid VARCHAR(255),
-    wave INT(255), kills INT(255), kills_fp INT(255), kills_sc INT(255), damage INT(255), damage_fp INT(255), damage_sc INT(255), shotsfired INT(255), meleeswings INT(255), shotshit INT(255), shotsheadshot INT(255), reloads INT(255), heals INT(255), damagetaken INT(255), deaths INT(255),
+    wave INT(255), perk VARCHAR(255), kills INT(255), kills_fp INT(255), kills_sc INT(255), damage INT(255), damage_fp INT(255), damage_sc INT(255), shotsfired INT(255), meleeswings INT(255), shotshit INT(255), shotsheadshot INT(255), reloads INT(255), heals INT(255), damagetaken INT(255), deaths INT(255),
     UNIQUE(sessionid, wave) ON CONFLICT REPLACE)
 """
 
@@ -164,10 +164,11 @@ class DatabaseManager:
         StatsData['wavenum'] = JsonPayload['wavenum']
         StatsData['playerid'] = JsonPayload['player']
         StatsData['sessionid'] = SessionID
+        StatsData['perk'] = JsonPayload.get('perk', '')
         StatsData['Deaths'] = 1 if JsonPayload['died'] else 0
         StatsData = FillStatsData(StatsData)
         self.DatabaseCursor.execute("CREATE TABLE IF NOT EXISTS "+PlayerTableID+PerPlayerTable)
-        self.DatabaseCursor.execute("INSERT INTO "+PlayerTableID+" VALUES(:playerid, :sessionid, :wavenum, :Kills, :KillsFP, :KillsSC, :Damage, :DamageFP, :DamageSC, :ShotsFired, :MeleeSwings, :ShotsHit, :ShotsHeadshot, :Reloads, :Heals, :DamageTaken, :Deaths)", StatsData)
+        self.DatabaseCursor.execute("INSERT INTO "+PlayerTableID+" VALUES(:playerid, :sessionid, :wavenum, :perk, :Kills, :KillsFP, :KillsSC, :Damage, :DamageFP, :DamageSC, :ShotsFired, :MeleeSwings, :ShotsHit, :ShotsHeadshot, :Reloads, :Heals, :DamageTaken, :Deaths)", StatsData)
         
         PlayerData = { "playerid" : StatsData['playerid'], "playertableid" : PlayerTableID, "playername" : JsonPayload['playername'], "deaths" : StatsData['Deaths'], "wincount" : 0, "losecount" : 0}
         self.DatabaseCursor.execute("""
