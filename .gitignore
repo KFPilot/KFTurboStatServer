@@ -8,3 +8,9 @@
 
 #Python files.
 !*.py
+
+#Vibecoded Dashboard
+!StatPage/
+StatPage/__pycache__/
+StatPage/RunStatPage.bat
+requirements.txt

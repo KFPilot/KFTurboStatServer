@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+{% block title %}KFTurbo Stats — Card Analytics{% endblock %}
+{% block content %}
+<h1>Card Analytics</h1>
+
+{% if cards %}
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Most Picked Cards</h5>
+                <canvas id="pickChart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Pick Rate vs Win Rate</h5>
+                <canvas id="rateChart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-striped table-sortable" id="cardTable">
+        <thead>
+            <tr>
+                <th data-col="cardid" data-type="string">Card</th>
+                <th data-col="shown" data-type="number">Shown</th>
+                <th data-col="selected" data-type="number">Picked</th>
+                <th data-col="pick_rate" data-type="number">Pick Rate</th>
+                <th data-col="wins" data-type="number">Wins</th>
+                <th data-col="losses" data-type="number">Losses</th>
+                <th data-col="win_rate" data-type="number">Win Rate</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for c in cards %}
+            <tr>
+                <td>{{ c.cardid }}</td>
+                <td>{{ c.shown }}</td>
+                <td>{{ c.selected }}</td>
+                <td>{{ c.pick_rate }}%</td>
+                <td>{{ c.wins }}</td>
+                <td>{{ c.losses }}</td>
+                <td>{{ c.win_rate }}%</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<p class="text-muted">No card data available.</p>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{% if cards %}
+<script>
+const cards = {{ cards | tojson }};
+const top20 = cards.slice(0, 20);
+
+new Chart(document.getElementById('pickChart'), {
+    type: 'bar',
+    data: {
+        labels: top20.map(c => c.cardid),
+        datasets: [{
+            label: 'Times Picked',
+            data: top20.map(c => c.selected),
+            backgroundColor: '#0d6efd'
+        }]
+    },
+    options: {
+        responsive: true,
+        indexAxis: 'y',
+        plugins: { legend: { display: false } }
+    }
+});
+
+// Pick rate vs win rate scatter
+const withGames = cards.filter(c => (c.wins + c.losses) > 0);
+new Chart(document.getElementById('rateChart'), {
+    type: 'scatter',
+    data: {
+        datasets: [{
+            label: 'Cards',
+            data: withGames.map(c => ({ x: c.pick_rate, y: c.win_rate, label: c.cardid })),
+            backgroundColor: '#198754',
+            pointRadius: 5
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            tooltip: {
+                callbacks: {
+                    label: ctx => `${ctx.raw.label}: ${ctx.raw.x}% pick, ${ctx.raw.y}% win`
+                }
+            },
+            legend: { display: false }
+        },
+        scales: {
+            x: { title: { display: true, text: 'Pick Rate (%)' } },
+            y: { title: { display: true, text: 'Win Rate (%)' } }
+        }
+    }
+});
+
+// Sorting
+document.querySelectorAll('.table-sortable th').forEach(th => {
+    th.addEventListener('click', () => {
+        const table = th.closest('table');
+        const tbody = table.querySelector('tbody');
+        const rows = Array.from(tbody.querySelectorAll('tr'));
+        const idx = Array.from(th.parentNode.children).indexOf(th);
+        const type = th.dataset.type;
+        const asc = !th.classList.contains('sorted-asc');
+        table.querySelectorAll('th').forEach(h => h.classList.remove('sorted-asc', 'sorted-desc'));
+        th.classList.add(asc ? 'sorted-asc' : 'sorted-desc');
+        rows.sort((a, b) => {
+            let va = a.children[idx].textContent.trim();
+            let vb = b.children[idx].textContent.trim();
+            if (type === 'number') {
+                va = parseFloat(va.replace(/[,%]/g, '')) || 0;
+                vb = parseFloat(vb.replace(/[,%]/g, '')) || 0;
+                return asc ? va - vb : vb - va;
+            }
+            return asc ? va.localeCompare(vb) : vb.localeCompare(va);
+        });
+        rows.forEach(r => tbody.appendChild(r));
+    });
+});
+</script>
+{% endif %}
+{% endblock %}

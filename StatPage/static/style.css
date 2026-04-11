@@ -1,0 +1,25 @@
+body {
+    min-height: 100vh;
+}
+
+.table-sortable th {
+    cursor: pointer;
+    user-select: none;
+}
+
+.table-sortable th:hover {
+    color: #0d6efd;
+}
+
+.table-sortable th.sorted-asc::after {
+    content: " \25B2";
+}
+
+.table-sortable th.sorted-desc::after {
+    content: " \25BC";
+}
+
+.stat-highlight {
+    font-size: 1.5rem;
+    font-weight: 600;
+}

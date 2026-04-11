@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}KFTurbo Stats — Overview{% endblock %}
+{% block content %}
+<h1>Overview</h1>
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title text-muted">Total Sessions</h5>
+                <p class="display-6">{{ overview.total_sessions }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title text-muted">Total Players</h5>
+                <p class="display-6">{{ overview.total_players }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title text-muted">Wins</h5>
+                <p class="display-6">{{ overview.status_counts.get('Win', 0) }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title text-muted">Losses</h5>
+                <p class="display-6">{{ overview.status_counts.get('Lose', 0) }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if overview.top_maps %}
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Game Results</h5>
+                <canvas id="statusChart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Top Maps</h5>
+                <canvas id="mapChart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+const statusData = {{ overview.status_counts | tojson }};
+const mapData = {{ overview.top_maps | tojson }};
+
+if (Object.keys(statusData).length > 0) {
+    new Chart(document.getElementById('statusChart'), {
+        type: 'doughnut',
+        data: {
+            labels: Object.keys(statusData),
+            datasets: [{
+                data: Object.values(statusData),
+                backgroundColor: ['#198754', '#dc3545', '#6c757d', '#ffc107']
+            }]
+        },
+        options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+    });
+}
+
+if (mapData.length > 0) {
+    new Chart(document.getElementById('mapChart'), {
+        type: 'bar',
+        data: {
+            labels: mapData.map(m => m.map),
+            datasets: [{
+                label: 'Games Played',
+                data: mapData.map(m => m.count),
+                backgroundColor: '#0d6efd'
+            }]
+        },
+        options: {
+            responsive: true,
+            indexAxis: 'y',
+            plugins: { legend: { display: false } }
+        }
+    });
+}
+</script>
+{% endblock %}

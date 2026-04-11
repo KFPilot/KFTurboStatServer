@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+{% block title %}KFTurbo Stats — Perk Analytics{% endblock %}
+{% block content %}
+<h1>Perk Usage & Kill Distribution</h1>
+
+{% if perks %}
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">Perk Usage (Waves Played)</h5>
+                <canvas id="usageChart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">Kill Distribution by Perk</h5>
+                <canvas id="killChart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">Damage Output by Perk</h5>
+                <canvas id="damageChart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Fleshpound Kills by Perk</h5>
+                <canvas id="fpKillChart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Scrake Kills by Perk</h5>
+                <canvas id="scKillChart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<h3>Per-Perk Averages (per wave)</h3>
+<div class="table-responsive">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Perk</th>
+                <th>Unique Players</th>
+                <th>Waves Played</th>
+                <th>Total Kills</th>
+                <th>Kills/Wave</th>
+                <th>Damage/Wave</th>
+                <th>Heals/Wave</th>
+                <th>Accuracy</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in perks %}
+            <tr>
+                <td><strong>{{ p.perk }}</strong></td>
+                <td>{{ p.unique_players }}</td>
+                <td>{{ "{:,}".format(p.waves) }}</td>
+                <td>{{ "{:,}".format(p.kills) }}</td>
+                <td>{{ p.kills_per_wave }}</td>
+                <td>{{ "{:,.0f}".format(p.damage_per_wave) }}</td>
+                <td>{{ p.heals_per_wave }}</td>
+                <td>{{ p.accuracy }}%</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<p class="text-muted">No perk data available.</p>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{% if perks %}
+<script>
+const perks = {{ perks | tojson }};
+const colors = [
+    '#dc3545', '#fd7e14', '#ffc107', '#198754',
+    '#0dcaf0', '#0d6efd', '#6f42c1', '#d63384',
+    '#20c997', '#adb5bd'
+];
+
+// Perk usage donut
+new Chart(document.getElementById('usageChart'), {
+    type: 'doughnut',
+    data: {
+        labels: perks.map(p => p.perk),
+        datasets: [{
+            data: perks.map(p => p.waves),
+            backgroundColor: colors
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: { legend: { position: 'bottom' } }
+    }
+});
+
+// Kill distribution stacked bar
+new Chart(document.getElementById('killChart'), {
+    type: 'bar',
+    data: {
+        labels: perks.map(p => p.perk),
+        datasets: [
+            {
+                label: 'Other Kills',
+                data: perks.map(p => p.kills_other),
+                backgroundColor: '#6c757d'
+            },
+            {
+                label: 'Fleshpound Kills',
+                data: perks.map(p => p.kills_fp),
+                backgroundColor: '#dc3545'
+            },
+            {
+                label: 'Scrake Kills',
+                data: perks.map(p => p.kills_sc),
+                backgroundColor: '#ffc107'
+            }
+        ]
+    },
+    options: {
+        responsive: true,
+        scales: { x: { stacked: true }, y: { stacked: true } },
+        plugins: { legend: { position: 'bottom' } }
+    }
+});
+
+// Fleshpound kills bar
+const fpSorted = [...perks].sort((a, b) => b.kills_fp - a.kills_fp).filter(p => p.kills_fp > 0);
+new Chart(document.getElementById('fpKillChart'), {
+    type: 'bar',
+    data: {
+        labels: fpSorted.map(p => p.perk),
+        datasets: [{
+            label: 'FP Kills',
+            data: fpSorted.map(p => p.kills_fp),
+            backgroundColor: '#dc3545'
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: { legend: { display: false } }
+    }
+});
+
+// Scrake kills bar
+const scSorted = [...perks].sort((a, b) => b.kills_sc - a.kills_sc).filter(p => p.kills_sc > 0);
+new Chart(document.getElementById('scKillChart'), {
+    type: 'bar',
+    data: {
+        labels: scSorted.map(p => p.perk),
+        datasets: [{
+            label: 'SC Kills',
+            data: scSorted.map(p => p.kills_sc),
+            backgroundColor: '#ffc107'
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: { legend: { display: false } }
+    }
+});
+
+// Damage output bar
+new Chart(document.getElementById('damageChart'), {
+    type: 'bar',
+    data: {
+        labels: perks.map(p => p.perk),
+        datasets: [
+            {
+                label: 'Other Damage',
+                data: perks.map(p => p.damage - p.damage_fp - p.damage_sc),
+                backgroundColor: '#6c757d'
+            },
+            {
+                label: 'FP Damage',
+                data: perks.map(p => p.damage_fp),
+                backgroundColor: '#dc3545'
+            },
+            {
+                label: 'SC Damage',
+                data: perks.map(p => p.damage_sc),
+                backgroundColor: '#ffc107'
+            }
+        ]
+    },
+    options: {
+        responsive: true,
+        scales: { x: { stacked: true }, y: { stacked: true } },
+        plugins: { legend: { position: 'bottom' } }
+    }
+});
+</script>
+{% endif %}
+{% endblock %}
