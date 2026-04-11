@@ -2,6 +2,7 @@ from flask import Flask, render_template, abort, request
 import db
 
 app = Flask(__name__)
+app.jinja_env.filters["gametype_name"] = db.gametype_display_name
 
 @app.context_processor
 def inject_filter_context():

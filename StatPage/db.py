@@ -13,10 +13,21 @@ PERK_NAMES = {
     "MED": "Field Medic",
 }
 
+GAMETYPE_NAMES = {
+    "turbo": "Turbo",
+    "turbocardgame": "Card Game",
+    "turboplus": "Turbo+",
+}
+
 def perk_display_name(code):
     if not code:
         return "Unknown"
     return PERK_NAMES.get(code, code)
+
+def gametype_display_name(code):
+    if not code:
+        return "Unknown"
+    return GAMETYPE_NAMES.get(code, code)
 
 def _table_has_column(cur, table, column):
     cols = [row[1] for row in cur.execute(f"PRAGMA table_info([{table}])").fetchall()]

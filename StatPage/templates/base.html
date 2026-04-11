@@ -37,7 +37,7 @@
                     <div class="form-check form-check-inline mb-0">
                         <input class="form-check-input" type="checkbox" name="gametypes" value="{{ gt }}" id="gt_{{ gt }}"
                             {{ "checked" if gt in selected_gametypes or not selected_gametypes }}>
-                        <label class="form-check-label" for="gt_{{ gt }}">{{ gt }}</label>
+                        <label class="form-check-label" for="gt_{{ gt }}">{{ gt | gametype_name }}</label>
                     </div>
                     {% endfor %}
                 </form>
