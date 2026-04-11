@@ -3,6 +3,7 @@ import db
 
 app = Flask(__name__)
 app.jinja_env.filters["gametype_name"] = db.gametype_display_name
+app.jinja_env.filters["card_name"] = db.card_display_name
 
 @app.context_processor
 def inject_filter_context():
@@ -45,7 +46,7 @@ def player_detail(playertableid):
 @app.route("/cards")
 def cards():
     card_stats = db.get_card_stats()
-    return render_template("cards.html", cards=card_stats)
+    return render_template("cards.html", cards=card_stats, card_names=db.CARD_NAMES)
 
 @app.route("/perks")
 def perks():

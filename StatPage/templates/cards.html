@@ -4,6 +4,17 @@
 <h1>Card Analytics</h1>
 
 {% if cards %}
+<div class="d-flex align-items-center gap-2 mb-3">
+    <span class="text-muted">Category:</span>
+    <div class="btn-group" id="cardCategoryFilter">
+        <button type="button" class="btn btn-sm btn-outline-secondary active" data-category="all">All</button>
+        <button type="button" class="btn btn-sm btn-outline-secondary" data-category="SUPER_">Super</button>
+        <button type="button" class="btn btn-sm btn-outline-secondary" data-category="GOOD_">Good</button>
+        <button type="button" class="btn btn-sm btn-outline-secondary" data-category="PROCON_">Pro/Con</button>
+        <button type="button" class="btn btn-sm btn-outline-secondary" data-category="EVIL_">Evil</button>
+    </div>
+</div>
+
 <div class="row mb-4">
     <div class="col-md-6">
         <div class="card">
@@ -16,8 +27,8 @@
     <div class="col-md-6">
         <div class="card">
             <div class="card-body">
-                <h5 class="card-title">Pick Rate vs Win Rate</h5>
-                <canvas id="rateChart" height="300"></canvas>
+                <h5 class="card-title">Least Picked Cards</h5>
+                <canvas id="leastPickedChart" height="300"></canvas>
             </div>
         </div>
     </div>
@@ -39,7 +50,7 @@
         <tbody>
             {% for c in cards %}
             <tr>
-                <td>{{ c.cardid }}</td>
+                <td title="{{ c.cardid }}">{{ c.cardid | card_name }}</td>
                 <td>{{ c.shown }}</td>
                 <td>{{ c.selected }}</td>
                 <td>{{ c.pick_rate }}%</td>
@@ -60,52 +71,72 @@
 {% if cards %}
 <script>
 const cards = {{ cards | tojson }};
-const top20 = cards.slice(0, 20);
+const cardNames = {{ card_names | tojson }};
+function cardLabel(id) { return cardNames[id] || id; }
 
-new Chart(document.getElementById('pickChart'), {
-    type: 'bar',
-    data: {
-        labels: top20.map(c => c.cardid),
-        datasets: [{
-            label: 'Times Picked',
-            data: top20.map(c => c.selected),
-            backgroundColor: '#1f6feb'
-        }]
-    },
-    options: {
-        responsive: true,
-        indexAxis: 'y',
-        plugins: { legend: { display: false } }
-    }
-});
+function filterCards(category) {
+    if (category === 'all') return cards;
+    return cards.filter(c => c.cardid.startsWith(category));
+}
 
-// Pick rate vs win rate scatter
-const withGames = cards.filter(c => (c.wins + c.losses) > 0);
-new Chart(document.getElementById('rateChart'), {
-    type: 'scatter',
-    data: {
-        datasets: [{
-            label: 'Cards',
-            data: withGames.map(c => ({ x: c.pick_rate, y: c.win_rate, label: c.cardid })),
-            backgroundColor: '#1a7f37',
-            pointRadius: 5
-        }]
-    },
-    options: {
-        responsive: true,
-        plugins: {
-            tooltip: {
-                callbacks: {
-                    label: ctx => `${ctx.raw.label}: ${ctx.raw.x}% pick, ${ctx.raw.y}% win`
-                }
-            },
-            legend: { display: false }
+let pickChart = null;
+let leastPickedChart = null;
+
+function buildCharts(category) {
+    const filtered = filterCards(category);
+
+    // Most picked
+    const mostPicked = [...filtered].sort((a, b) => b.selected - a.selected).slice(0, 20);
+    if (pickChart) pickChart.destroy();
+    pickChart = new Chart(document.getElementById('pickChart'), {
+        type: 'bar',
+        data: {
+            labels: mostPicked.map(c => cardLabel(c.cardid)),
+            datasets: [{
+                label: 'Times Picked',
+                data: mostPicked.map(c => c.selected),
+                backgroundColor: '#1f6feb'
+            }]
         },
-        scales: {
-            x: { title: { display: true, text: 'Pick Rate (%)' } },
-            y: { title: { display: true, text: 'Win Rate (%)' } }
+        options: {
+            responsive: true,
+            indexAxis: 'y',
+            plugins: { legend: { display: false } }
         }
-    }
+    });
+
+    // Least picked
+    const leastPicked = [...filtered]
+        .filter(c => c.shown > 0)
+        .sort((a, b) => (b.shown - b.selected) - (a.shown - a.selected))
+        .slice(0, 20);
+    if (leastPickedChart) leastPickedChart.destroy();
+    leastPickedChart = new Chart(document.getElementById('leastPickedChart'), {
+        type: 'bar',
+        data: {
+            labels: leastPicked.map(c => cardLabel(c.cardid)),
+            datasets: [{
+                label: 'Times Skipped',
+                data: leastPicked.map(c => c.shown - c.selected),
+                backgroundColor: '#9e2a2a'
+            }]
+        },
+        options: {
+            responsive: true,
+            indexAxis: 'y',
+            plugins: { legend: { display: false } }
+        }
+    });
+}
+
+buildCharts('all');
+
+document.getElementById('cardCategoryFilter').addEventListener('click', function(e) {
+    const btn = e.target.closest('button[data-category]');
+    if (!btn) return;
+    this.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    buildCharts(btn.dataset.category);
 });
 
 // Sorting

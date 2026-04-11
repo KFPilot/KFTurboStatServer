@@ -1,6 +1,7 @@
 import sqlite3
 import time
 import os
+import json
 
 DB_PATH = os.environ.get("TURBO_DB_PATH", os.path.join(os.path.dirname(__file__), "..", "TurboDatabase.db"))
 
@@ -24,6 +25,14 @@ def perk_display_name(code):
     if not code:
         return "Unknown"
     return PERK_NAMES.get(code, code)
+
+with open(os.path.join(os.path.dirname(__file__), "card_names.json")) as f:
+    CARD_NAMES = json.load(f)
+
+def card_display_name(card_id):
+    if not card_id:
+        return "Unknown"
+    return CARD_NAMES.get(card_id, card_id)
 
 def gametype_display_name(code):
     if not code:
