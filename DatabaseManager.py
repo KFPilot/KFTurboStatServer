@@ -49,9 +49,15 @@ class DatabaseManager:
         # All of these handle conflicts by ignoring the insert request because we don't want duplicates or replacement.
         self.DatabaseCursor.execute("""
             CREATE TABLE IF NOT EXISTS sessiontable
-            (sessionid, version, gametype, status, map, time,
+            (sessionid, version, gametype, status, map, time, difficulty INT(255),
             UNIQUE(sessionid) ON CONFLICT IGNORE)
         """)
+
+        # Migrate existing sessiontable if it lacks the difficulty column.
+        columns = [row[1] for row in self.DatabaseCursor.execute("PRAGMA table_info(sessiontable)").fetchall()]
+        if "difficulty" not in columns:
+            self.DatabaseCursor.execute("ALTER TABLE sessiontable ADD COLUMN difficulty INT(255) DEFAULT 0")
+            self.DatabaseCursor.execute("UPDATE sessiontable SET difficulty = 0 WHERE difficulty IS NULL")
         
         self.DatabaseCursor.execute("""
             CREATE TABLE IF NOT EXISTS playertable
@@ -102,7 +108,7 @@ class DatabaseManager:
         #print(SessionID, JsonPayload)
         #Mutate this for preparation to be inserted into table.
         JsonPayload['status'] = "InProgress"
-        self.DatabaseCursor.execute("INSERT INTO sessiontable VALUES(:session, :version, :gametype, :status, :map, :time)", JsonPayload)
+        self.DatabaseCursor.execute("INSERT INTO sessiontable VALUES(:session, :version, :gametype, :status, :map, :time, :difficulty)", JsonPayload)
 
     def ProcessGameEndPayload(self, SessionID, JsonPayload):
         #print(SessionID, JsonPayload)
