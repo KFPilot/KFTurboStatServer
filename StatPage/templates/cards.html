@@ -69,7 +69,7 @@ new Chart(document.getElementById('pickChart'), {
         datasets: [{
             label: 'Times Picked',
             data: top20.map(c => c.selected),
-            backgroundColor: '#0d6efd'
+            backgroundColor: '#1f6feb'
         }]
     },
     options: {
@@ -87,7 +87,7 @@ new Chart(document.getElementById('rateChart'), {
         datasets: [{
             label: 'Cards',
             data: withGames.map(c => ({ x: c.pick_rate, y: c.win_rate, label: c.cardid })),
-            backgroundColor: '#198754',
+            backgroundColor: '#1a7f37',
             pointRadius: 5
         }]
     },

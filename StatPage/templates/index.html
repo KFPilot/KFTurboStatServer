@@ -64,14 +64,24 @@
 const statusData = {{ overview.status_counts | tojson }};
 const mapData = {{ overview.top_maps | tojson }};
 
-if (Object.keys(statusData).length > 0) {
+const statusColors = {
+    'Win': '#1a7f37',
+    'Lose': '#9e2a2a',
+    'Abort': '#484f58',
+    'Ended': '#484f58',
+    'InProgress': '#9e6a03',
+};
+const statusLabels = Object.keys(statusData);
+if (statusLabels.length > 0) {
     new Chart(document.getElementById('statusChart'), {
         type: 'doughnut',
         data: {
-            labels: Object.keys(statusData),
+            labels: statusLabels,
             datasets: [{
-                data: Object.values(statusData),
-                backgroundColor: ['#198754', '#dc3545', '#6c757d', '#ffc107']
+                data: statusLabels.map(k => statusData[k]),
+                backgroundColor: statusLabels.map(k => statusColors[k] || '#484f58'),
+                borderWidth: 4,
+                borderColor: '#161b22'
             }]
         },
         options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
@@ -86,7 +96,7 @@ if (mapData.length > 0) {
             datasets: [{
                 label: 'Games Played',
                 data: mapData.map(m => m.count),
-                backgroundColor: '#0d6efd'
+                backgroundColor: '#1f6feb'
             }]
         },
         options: {

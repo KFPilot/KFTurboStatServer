@@ -1,14 +1,14 @@
 {% extends "base.html" %}
 {% block title %}KFTurbo Stats — Perk Analytics{% endblock %}
 {% block content %}
-<h1>Perk Usage & Kill Distribution</h1>
+<h1>Perk Usage</h1>
 
 {% if perks %}
 <div class="row mb-4">
     <div class="col-md-4">
         <div class="card h-100">
             <div class="card-body">
-                <h5 class="card-title">Perk Usage (Waves Played)</h5>
+                <h5 class="card-title">Waves Played</h5>
                 <canvas id="usageChart" height="300"></canvas>
             </div>
         </div>
@@ -16,7 +16,7 @@
     <div class="col-md-4">
         <div class="card h-100">
             <div class="card-body">
-                <h5 class="card-title">Kill Distribution by Perk</h5>
+                <h5 class="card-title">Kill Distribution</h5>
                 <canvas id="killChart" height="300"></canvas>
             </div>
         </div>
@@ -24,7 +24,7 @@
     <div class="col-md-4">
         <div class="card h-100">
             <div class="card-body">
-                <h5 class="card-title">Damage Output by Perk</h5>
+                <h5 class="card-title">Damage Output</h5>
                 <canvas id="damageChart" height="300"></canvas>
             </div>
         </div>
@@ -35,7 +35,7 @@
     <div class="col-md-6">
         <div class="card">
             <div class="card-body">
-                <h5 class="card-title">Fleshpound Kills by Perk</h5>
+                <h5 class="card-title">Fleshpound Kills</h5>
                 <canvas id="fpKillChart" height="300"></canvas>
             </div>
         </div>
@@ -43,14 +43,14 @@
     <div class="col-md-6">
         <div class="card">
             <div class="card-body">
-                <h5 class="card-title">Scrake Kills by Perk</h5>
+                <h5 class="card-title">Scrake Kills</h5>
                 <canvas id="scKillChart" height="300"></canvas>
             </div>
         </div>
     </div>
 </div>
 
-<h3>Per-Perk Averages (per wave)</h3>
+<h3>Averages</h3>
 <div class="table-responsive">
     <table class="table table-striped">
         <thead>
@@ -90,20 +90,39 @@
 {% if perks %}
 <script>
 const perks = {{ perks | tojson }};
-const colors = [
-    '#dc3545', '#fd7e14', '#ffc107', '#198754',
-    '#0dcaf0', '#0d6efd', '#6f42c1', '#d63384',
-    '#20c997', '#adb5bd'
+
+const allPerks = [
+    { name: 'Sharpshooter',       color: '#b62324' },
+    { name: 'Demolitions',        color: '#c45918' },
+    { name: 'Support Specialist', color: '#9e6a03' },
+    { name: 'Commando',           color: '#1a7f37' },
+    { name: 'Firebug',            color: '#0c7d9d' },
+    { name: 'Field Medic',        color: '#1f6feb' },
+    { name: 'Berserker',          color: '#6639a6' },
 ];
+
+const perkDataMap = {};
+perks.forEach(p => { perkDataMap[p.perk] = p; });
+
+const pieLabels = allPerks.map(p => p.name);
+const pieData = allPerks.map(p => (perkDataMap[p.name] || {}).waves || 0);
+const pieColors = allPerks.map(p => p.color);
+
+function perkColor(name) {
+    const entry = allPerks.find(p => p.name === name);
+    return entry ? entry.color : '#636e7b';
+}
 
 // Perk usage donut
 new Chart(document.getElementById('usageChart'), {
     type: 'doughnut',
     data: {
-        labels: perks.map(p => p.perk),
+        labels: pieLabels,
         datasets: [{
-            data: perks.map(p => p.waves),
-            backgroundColor: colors
+            data: pieData,
+            backgroundColor: pieColors,
+            borderWidth: 4,
+            borderColor: '#161b22'
         }]
     },
     options: {
@@ -119,26 +138,26 @@ new Chart(document.getElementById('killChart'), {
         labels: perks.map(p => p.perk),
         datasets: [
             {
-                label: 'Other Kills',
+                label: 'Other',
                 data: perks.map(p => p.kills_other),
-                backgroundColor: '#6c757d'
+                backgroundColor: '#484f58'
             },
             {
-                label: 'Fleshpound Kills',
-                data: perks.map(p => p.kills_fp),
-                backgroundColor: '#dc3545'
-            },
-            {
-                label: 'Scrake Kills',
+                label: 'Scrake',
                 data: perks.map(p => p.kills_sc),
-                backgroundColor: '#ffc107'
+                backgroundColor: '#9e6a03'
+            },
+            {
+                label: 'Fleshpound',
+                data: perks.map(p => p.kills_fp),
+                backgroundColor: '#b62324'
             }
         ]
     },
     options: {
         responsive: true,
         scales: { x: { stacked: true }, y: { stacked: true } },
-        plugins: { legend: { position: 'bottom' } }
+        plugins: { legend: { position: 'bottom', reverse: true } }
     }
 });
 
@@ -151,7 +170,7 @@ new Chart(document.getElementById('fpKillChart'), {
         datasets: [{
             label: 'FP Kills',
             data: fpSorted.map(p => p.kills_fp),
-            backgroundColor: '#dc3545'
+            backgroundColor: fpSorted.map(p => perkColor(p.perk))
         }]
     },
     options: {
@@ -169,7 +188,7 @@ new Chart(document.getElementById('scKillChart'), {
         datasets: [{
             label: 'SC Kills',
             data: scSorted.map(p => p.kills_sc),
-            backgroundColor: '#ffc107'
+            backgroundColor: scSorted.map(p => perkColor(p.perk))
         }]
     },
     options: {
@@ -185,26 +204,26 @@ new Chart(document.getElementById('damageChart'), {
         labels: perks.map(p => p.perk),
         datasets: [
             {
-                label: 'Other Damage',
+                label: 'Other',
                 data: perks.map(p => p.damage - p.damage_fp - p.damage_sc),
-                backgroundColor: '#6c757d'
+                backgroundColor: '#484f58'
             },
             {
-                label: 'FP Damage',
-                data: perks.map(p => p.damage_fp),
-                backgroundColor: '#dc3545'
-            },
-            {
-                label: 'SC Damage',
+                label: 'Scrake',
                 data: perks.map(p => p.damage_sc),
-                backgroundColor: '#ffc107'
+                backgroundColor: '#9e6a03'
+            },
+            {
+                label: 'Fleshpound',
+                data: perks.map(p => p.damage_fp),
+                backgroundColor: '#b62324'
             }
         ]
     },
     options: {
         responsive: true,
         scales: { x: { stacked: true }, y: { stacked: true } },
-        plugins: { legend: { position: 'bottom' } }
+        plugins: { legend: { position: 'bottom', reverse: true } }
     }
 });
 </script>

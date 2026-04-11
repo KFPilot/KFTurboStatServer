@@ -132,16 +132,21 @@
 {% if data.perk_summary %}
 <script>
 const perkData = {{ data.perk_summary | tojson }};
+const perkColors = {
+    'Sharpshooter': '#b62324', 'Demolitions': '#c45918',
+    'Support Specialist': '#9e6a03', 'Commando': '#1a7f37',
+    'Firebug': '#0c7d9d', 'Field Medic': '#1f6feb',
+    'Berserker': '#6639a6',
+};
 new Chart(document.getElementById('perkPie'), {
     type: 'doughnut',
     data: {
         labels: perkData.map(p => p.perk),
         datasets: [{
             data: perkData.map(p => p.waves_played),
-            backgroundColor: [
-                '#dc3545', '#fd7e14', '#ffc107', '#198754',
-                '#0dcaf0', '#0d6efd', '#6f42c1', '#d63384'
-            ]
+            backgroundColor: perkData.map(p => perkColors[p.perk] || '#636e7b'),
+            borderWidth: 4,
+            borderColor: '#161b22'
         }]
     },
     options: {

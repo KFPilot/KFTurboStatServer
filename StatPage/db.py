@@ -11,6 +11,7 @@ PERK_NAMES = {
     "COM": "Commando",
     "FIR": "Firebug",
     "MED": "Field Medic",
+    "BER": "Berserker",
 }
 
 GAMETYPE_NAMES = {
