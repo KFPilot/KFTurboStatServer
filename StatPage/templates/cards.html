@@ -86,7 +86,7 @@ function buildCharts(category) {
     const filtered = filterCards(category);
 
     // Most picked
-    const mostPicked = [...filtered].sort((a, b) => b.selected - a.selected).slice(0, 20);
+    const mostPicked = [...filtered].sort((a, b) => b.selected - a.selected).slice(0, 40);
     if (pickChart) pickChart.destroy();
     pickChart = new Chart(document.getElementById('pickChart'), {
         type: 'bar',
@@ -109,7 +109,7 @@ function buildCharts(category) {
     const leastPicked = [...filtered]
         .filter(c => c.shown > 0)
         .sort((a, b) => (b.shown - b.selected) - (a.shown - a.selected))
-        .slice(0, 20);
+        .slice(0, 40);
     if (leastPickedChart) leastPickedChart.destroy();
     leastPickedChart = new Chart(document.getElementById('leastPickedChart'), {
         type: 'bar',
