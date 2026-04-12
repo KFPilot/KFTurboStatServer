@@ -9,6 +9,7 @@ WORKDIR /app
 
 COPY pyproject.toml README.md LICENSE /app/
 COPY *.py /app/
+COPY StatPage /app/StatPage
 
 RUN pip install --no-cache-dir .
 

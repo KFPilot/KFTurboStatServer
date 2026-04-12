@@ -6,3 +6,5 @@
 !LICENSE
 !ConnectionManager.py
 !DatabaseManager.py
+!StatPage/
+!StatPage/**

@@ -39,5 +39,5 @@ docker compose up -d --build
 Compose defaults:
 - `KF_LISTEN_PORT=10101`
 - `KF_MAX_CONNECTIONS=10`
-- `KF_STATS_DB_PATH=/app/data/TurboDatabase.db`
+- `TURBO_DB_PATH=/app/data/TurboDatabase.db`
 - database persisted to `./data/TurboDatabase.db`

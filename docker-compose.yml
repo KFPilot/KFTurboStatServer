@@ -1,16 +1,30 @@
 services:
-  kfturbo-stat:
+  kfturbo-stat-listener:
     build:
       context: .
     image: kfturbo-stat:local
-    container_name: kfturbo-stat
+    container_name: kfturbo-stat-listener
     restart: unless-stopped
     ports:
       - "${KF_LISTEN_PORT:-10101}:${KF_LISTEN_PORT:-10101}/tcp"
     environment:
       KF_LISTEN_PORT: "${KF_LISTEN_PORT:-10101}"
       KF_MAX_CONNECTIONS: "${KF_MAX_CONNECTIONS:-10}"
-      KF_STATS_DB_PATH: "/app/data/TurboDatabase.db"
+      TURBO_DB_PATH: "/app/data/TurboDatabase.db"
     command: sh -c "python ConnectionManager.py -p $${KF_LISTEN_PORT} -c $${KF_MAX_CONNECTIONS}"
+    volumes:
+      - ./data:/app/data
+  kfturbo-stat-dashboard:
+    build:
+      context: .
+    image: kfturbo-stat:local
+    container_name: kfturbo-stat-dashboard
+    restart: unless-stopped
+    ports:
+      - "${TURBO_DASHBOARD_PORT:-5000}:${TURBO_DASHBOARD_PORT:-5000}"
+    environment:
+      TURBO_DB_PATH: "/app/data/TurboDatabase.db"
+      TURBO_DASHBOARD_PORT: "${TURBO_DASHBOARD_PORT:-5000}"
+    command: sh -c "python StatPage/app.py"
     volumes:
       - ./data:/app/data

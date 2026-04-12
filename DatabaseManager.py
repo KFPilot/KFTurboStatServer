@@ -58,7 +58,7 @@ PerSessionTable = """
 
 class DatabaseManager:
     def __init__(self):
-        DatabasePath = os.environ.get("KF_STATS_DB_PATH", "TurboDatabase.db")
+        DatabasePath = os.environ.get("TURBO_DB_PATH", "TurboDatabase.db")
         self.Database = sqlite3.connect(DatabasePath)
         self.Database.isolation_level = None  # Autocommit mode
         self.DatabaseCursor = self.Database.cursor()
@@ -72,10 +72,19 @@ class DatabaseManager:
         """)
 
         # Migrate existing sessiontable if it lacks the difficulty column.
-        columns = [row[1] for row in self.DatabaseCursor.execute("PRAGMA table_info(sessiontable)").fetchall()]
+        columns = [
+            row[1]
+            for row in self.DatabaseCursor.execute(
+                "PRAGMA table_info(sessiontable)"
+            ).fetchall()
+        ]
         if "difficulty" not in columns:
-            self.DatabaseCursor.execute("ALTER TABLE sessiontable ADD COLUMN difficulty INT(255) DEFAULT 0")
-            self.DatabaseCursor.execute("UPDATE sessiontable SET difficulty = 0 WHERE difficulty IS NULL")
+            self.DatabaseCursor.execute(
+                "ALTER TABLE sessiontable ADD COLUMN difficulty INT(255) DEFAULT 0"
+            )
+            self.DatabaseCursor.execute(
+                "UPDATE sessiontable SET difficulty = 0 WHERE difficulty IS NULL"
+            )
 
         self.DatabaseCursor.execute("""
             CREATE TABLE IF NOT EXISTS playertable

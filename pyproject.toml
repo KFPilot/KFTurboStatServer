@@ -9,7 +9,9 @@ description = "Network database manager for Killing Floor Turbo analytics payloa
 readme = "README.md"
 requires-python = ">=3.10"
 license = { file = "LICENSE" }
-dependencies = []
+dependencies = [
+    "Flask>=3.0",
+]
 
 [tool.setuptools]
 py-modules = [
