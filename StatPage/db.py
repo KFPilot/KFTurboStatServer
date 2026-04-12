@@ -19,6 +19,7 @@ GAMETYPE_NAMES = {
     "turbo": "Turbo",
     "turbocardgame": "Card Game",
     "turboplus": "Turbo+",
+    "turborandomizer": "Randomizer",
 }
 
 def perk_display_name(code):
@@ -47,9 +48,11 @@ _cache = {}
 CACHE_TTL = 60
 
 def _cache_key(base, gametypes):
-    if gametypes:
-        return base + ":" + ",".join(sorted(gametypes))
-    return base
+    if gametypes is None:
+        return base
+    if not gametypes:
+        return base + ":__none__"
+    return base + ":" + ",".join(sorted(gametypes))
 
 def _get_cached(key):
     if key in _cache:
@@ -76,8 +79,10 @@ def _session_where(gametypes, prefix=""):
 
 def _get_filtered_session_ids(cur, gametypes):
     """Return set of sessionids matching the gametype filter, or None if no filter."""
-    if not gametypes:
+    if gametypes is None:
         return None
+    if not gametypes:
+        return set()
     placeholders = ",".join("?" for _ in gametypes)
     rows = cur.execute(f"SELECT sessionid FROM sessiontable WHERE gametype IN ({placeholders})", gametypes).fetchall()
     return set(r[0] for r in rows)
@@ -99,7 +104,12 @@ def get_aggregate_overview(gametypes=None):
     cur = db.cursor()
 
     where_clause, params = "", []
-    if gametypes:
+    if gametypes is not None:
+        if not gametypes:
+            db.close()
+            result = {"total_sessions": 0, "total_players": 0, "status_counts": {}, "top_maps": []}
+            _set_cached(key, result)
+            return result
         placeholders = ",".join("?" for _ in gametypes)
         where_clause = f" WHERE gametype IN ({placeholders})"
         params = list(gametypes)

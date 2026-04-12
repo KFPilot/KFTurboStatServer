@@ -124,6 +124,30 @@ a:hover {
     color: #79c0ff;
 }
 
+/* Button group toggle filters */
+.btn-outline-secondary {
+    --bs-btn-color: #8b949e;
+    --bs-btn-border-color: var(--card-border);
+    --bs-btn-hover-color: #c9d1d9;
+    --bs-btn-hover-bg: #21262d;
+    --bs-btn-hover-border-color: #30363d;
+    --bs-btn-active-color: #c9d1d9;
+    --bs-btn-active-bg: #21262d;
+    --bs-btn-active-border-color: #30363d;
+    --bs-btn-focus-shadow-rgb: 33, 38, 45;
+}
+
+.btn-outline-secondary.active {
+    color: #e6edf3;
+    background-color: var(--accent-dim);
+    border-color: var(--accent-dim);
+}
+
+.btn-outline-secondary:focus,
+.btn-outline-secondary:focus-visible {
+    box-shadow: none;
+}
+
 /* Form controls in navbar */
 .form-check-input:checked {
     background-color: var(--accent-dim);

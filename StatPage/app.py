@@ -9,20 +9,25 @@ app.jinja_env.filters["card_name"] = db.card_display_name
 def inject_filter_context():
     all_gametypes = db.get_gametypes()
     selected = request.args.getlist("gametypes")
-    # Validate: only allow known gametypes
     selected = [g for g in selected if g in all_gametypes]
-    gametypes = selected if selected else None
+    has_filter_param = "gametypes" in request.args
+    # No query param at all = first visit, select all by default
+    if not has_filter_param:
+        selected = list(all_gametypes)
     return {
         "all_gametypes": all_gametypes,
         "selected_gametypes": selected,
-        "filter_qs": "&".join(f"gametypes={g}" for g in selected) if selected else "",
+        "filter_qs": "&".join(f"gametypes={g}" for g in selected) if selected else "gametypes=",
     }
 
 def _get_gametypes_filter():
     all_gametypes = db.get_gametypes()
+    has_filter_param = "gametypes" in request.args
+    if not has_filter_param:
+        return None
     selected = request.args.getlist("gametypes")
     selected = [g for g in selected if g in all_gametypes]
-    return selected if selected else None
+    return selected if selected else []
 
 @app.route("/")
 def index():
