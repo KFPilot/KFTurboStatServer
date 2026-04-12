@@ -38,7 +38,7 @@
 </div>
 
 {% if overview.top_maps %}
-<div class="row">
+<div class="row mb-4">
     <div class="col-md-6">
         <div class="card">
             <div class="card-body">
@@ -53,6 +53,52 @@
                 <h5 class="card-title">Top Maps</h5>
                 <canvas id="mapChart" height="250"></canvas>
             </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% if overview.recent_sessions %}
+<div class="card">
+    <div class="card-body">
+        <h5 class="card-title">Recent Sessions</h5>
+        <div class="table-responsive">
+            <table class="table table-striped mb-0">
+                <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>Map</th>
+                        <th>Mode</th>
+                        <th>Difficulty</th>
+                        <th>Result</th>
+                        <th>Version</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in overview.recent_sessions %}
+                    <tr>
+                        <td title="{{ s.time }}">{{ s.elapsed }}</td>
+                        <td>{{ s.map }}</td>
+                        <td>{{ s.gametype | gametype_name }}</td>
+                        <td>{{ s.difficulty | difficulty_name }}</td>
+                        <td>
+                            {% if s.status == 'Win' %}
+                                <span class="badge bg-success">Win</span>
+                            {% elif s.status == 'Lose' %}
+                                <span class="badge bg-danger">Loss</span>
+                            {% elif s.status == 'Abort' %}
+                                <span class="badge bg-secondary">Abort</span>
+                            {% elif s.status == 'InProgress' %}
+                                <span class="badge bg-warning">In Progress</span>
+                            {% else %}
+                                <span class="badge bg-secondary">{{ s.status }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-muted">{{ s.version }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     </div>
 </div>

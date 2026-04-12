@@ -224,6 +224,6 @@ class DatabaseManager:
     def CleanupPreviousSessions(self):
         Result = self.DatabaseCursor.execute("SELECT sessionid FROM sessiontable WHERE status IS 'InProgress'").fetchall()
         for SessionID in Result:
-            self.DatabaseCursor.execute("UPDATE sessiontable SET status = 'Ended' WHERE sessionid = ?", (SessionID[0],))
+            self.DatabaseCursor.execute("UPDATE sessiontable SET status = 'Abort' WHERE sessionid = ?", (SessionID[0],))
             self.DatabaseCursor.execute("UPDATE "+SessionID[0]+" SET status = 'Complete'")
 
