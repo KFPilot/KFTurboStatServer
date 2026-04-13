@@ -16,7 +16,7 @@ def DecodePlayerName(JsonPayload):
             return base64.b64decode(JsonPayload["playername"]).decode("utf-8", errors="replace")
         except Exception:
             pass
-    return JsonPayload.get("playername", "")
+    return "unknown"
 
 
 def GetPlayerID(ID):
