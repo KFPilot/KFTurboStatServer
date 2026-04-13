@@ -3,10 +3,20 @@
 # I am not familiar with Python nor SQLite so this should only be used as an example implementation.
 # Distributed under the terms of the GPL-2.0 License.
 # For more information see https://github.com/KFPilot/KFTurbo.
+import base64
 import json
 import os
 import sqlite3
 import time
+
+
+def DecodePlayerName(JsonPayload):
+    if "playername" in JsonPayload:
+        try:
+            return base64.b64decode(JsonPayload["playername"]).decode("utf-8", errors="replace")
+        except Exception:
+            pass
+    return JsonPayload.get("playername", "")
 
 
 def GetPlayerID(ID):
@@ -242,7 +252,7 @@ class DatabaseManager:
         PlayerData = {
             "playerid": StatsData["playerid"],
             "playertableid": PlayerTableID,
-            "playername": JsonPayload["playername"],
+            "playername": DecodePlayerName(JsonPayload),
             "deaths": StatsData["Deaths"],
             "wincount": 0,
             "losecount": 0,
