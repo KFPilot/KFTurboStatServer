@@ -101,14 +101,16 @@ function buildCharts(category) {
         options: {
             responsive: true,
             indexAxis: 'y',
-            plugins: { legend: { display: false } }
+            plugins: { legend: { display: false } },
+            scales: { x: { ticks: { stepSize: 1, precision: 0 } } }
         }
     });
 
-    // Least picked
+    // Least picked: cards shown >= 2 times, ranked by skip rate (%)
     const leastPicked = [...filtered]
-        .filter(c => c.shown > 0)
-        .sort((a, b) => (b.shown - b.selected) - (a.shown - a.selected))
+        .filter(c => c.shown >= 2)
+        .map(c => ({ ...c, skip_rate: (c.shown - c.selected) / c.shown * 100 }))
+        .sort((a, b) => b.skip_rate - a.skip_rate)
         .slice(0, 40);
     if (leastPickedChart) leastPickedChart.destroy();
     leastPickedChart = new Chart(document.getElementById('leastPickedChart'), {
@@ -116,8 +118,8 @@ function buildCharts(category) {
         data: {
             labels: leastPicked.map(c => cardLabel(c.cardid)),
             datasets: [{
-                label: 'Times Skipped',
-                data: leastPicked.map(c => c.shown - c.selected),
+                label: 'Skip Rate %',
+                data: leastPicked.map(c => c.skip_rate.toFixed(1)),
                 backgroundColor: '#9e2a2a'
             }]
         },
