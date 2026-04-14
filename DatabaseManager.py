@@ -224,7 +224,10 @@ class DatabaseManager:
 
     def ProcessWaveEndPayload(self, SessionID, JsonPayload):
         # print(SessionID, JsonPayload)
-        self.DatabaseCursor.execute("UPDATE " + SessionID + " SET status = 'Complete'")
+        self.DatabaseCursor.execute(
+            "UPDATE " + SessionID + " SET status = 'Complete' WHERE wave = ?",
+            (JsonPayload["wavenum"],),
+        )
 
     ########################################
     # PLAYER PAYLOADS
