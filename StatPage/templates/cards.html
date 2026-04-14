@@ -85,8 +85,19 @@ let leastPickedChart = null;
 function buildCharts(category) {
     const filtered = filterCards(category);
 
+    // Resize canvas height so every label fits (~22px per bar + 60px for x-axis labels)
+    function sizeCanvas(id, barCount) {
+        const canvas = document.getElementById(id);
+        const height = Math.max(180, barCount * 22 + 80);
+        canvas.parentElement.style.height = height + 'px';
+        canvas.style.height = height + 'px';
+    }
+
+    const yAxisOpts = { ticks: { autoSkip: false, font: { size: 11 } } };
+
     // Most picked
     const mostPicked = [...filtered].sort((a, b) => b.selected - a.selected).slice(0, 40);
+    sizeCanvas('pickChart', mostPicked.length);
     if (pickChart) pickChart.destroy();
     pickChart = new Chart(document.getElementById('pickChart'), {
         type: 'bar',
@@ -100,9 +111,14 @@ function buildCharts(category) {
         },
         options: {
             responsive: true,
+            maintainAspectRatio: false,
             indexAxis: 'y',
+            layout: { padding: { bottom: 10 } },
             plugins: { legend: { display: false } },
-            scales: { x: { ticks: { stepSize: 1, precision: 0 } } }
+            scales: {
+                x: { ticks: { stepSize: 1, precision: 0 } },
+                y: yAxisOpts
+            }
         }
     });
 
@@ -112,6 +128,7 @@ function buildCharts(category) {
         .map(c => ({ ...c, skip_rate: (c.shown - c.selected) / c.shown * 100 }))
         .sort((a, b) => b.skip_rate - a.skip_rate)
         .slice(0, 40);
+    sizeCanvas('leastPickedChart', leastPicked.length);
     if (leastPickedChart) leastPickedChart.destroy();
     leastPickedChart = new Chart(document.getElementById('leastPickedChart'), {
         type: 'bar',
@@ -125,8 +142,11 @@ function buildCharts(category) {
         },
         options: {
             responsive: true,
+            maintainAspectRatio: false,
             indexAxis: 'y',
-            plugins: { legend: { display: false } }
+            layout: { padding: { bottom: 10 } },
+            plugins: { legend: { display: false } },
+            scales: { y: yAxisOpts }
         }
     });
 }

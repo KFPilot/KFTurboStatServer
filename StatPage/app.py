@@ -95,6 +95,20 @@ def player_detail(playertableid):
     return render_template("player.html", data=data)
 
 
+@app.route("/sessions")
+def sessions():
+    session_list = db.get_sessions_list(_get_gametypes_filter(), _get_difficulties_filter())
+    return render_template("sessions.html", sessions=session_list)
+
+@app.route("/session/<sessionid>")
+def session_detail(sessionid):
+    if not sessionid.startswith("session_") or not sessionid[8:].replace("_", "").isalnum():
+        abort(404)
+    data = db.get_session_detail(sessionid)
+    if not data:
+        abort(404)
+    return render_template("session.html", data=data)
+
 @app.route("/cards")
 def cards():
     card_stats = db.get_card_stats()

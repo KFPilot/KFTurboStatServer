@@ -729,3 +729,155 @@ def get_perk_stats(gametypes=None, difficulties=None):
     db.close()
     _set_cached(key, result)
     return result
+
+
+def get_sessions_list(gametypes=None, difficulties=None):
+    """Return list of all sessions (filtered), newest first."""
+    key = _cache_key("sessions_list", gametypes, difficulties)
+    cached = _get_cached(key)
+    if cached:
+        return cached
+
+    if (gametypes is not None and not gametypes) or (difficulties is not None and not difficulties):
+        _set_cached(key, [])
+        return []
+
+    db = get_db()
+    cur = db.cursor()
+    where_clause, params = _session_filter_clause(gametypes, difficulties)
+    rows = cur.execute(
+        f"SELECT sessionid, version, gametype, status, map, time, difficulty FROM sessiontable{where_clause}",
+        params,
+    ).fetchall()
+
+    now = datetime.utcnow()
+    parsed = []
+    for row in rows:
+        dt = parse_session_time(row["time"])
+        parsed.append((dt or datetime.min, row))
+    parsed.sort(key=lambda x: x[0], reverse=True)
+
+    result = []
+    for dt, row in parsed:
+        status = row["status"]
+        if status == "Ended":
+            status = "Abort"
+        table_exists = cur.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name=?", (row["sessionid"],)
+        ).fetchone()
+        waves = 0
+        if table_exists:
+            waves = cur.execute(f"SELECT COUNT(*) FROM [{row['sessionid']}]").fetchone()[0]
+        result.append({
+            "sessionid": row["sessionid"],
+            "version": row["version"],
+            "gametype": row["gametype"],
+            "status": status,
+            "map": row["map"],
+            "time": row["time"],
+            "elapsed": elapsed_string(row["time"], now),
+            "difficulty": row["difficulty"],
+            "waves": waves,
+        })
+
+    db.close()
+    _set_cached(key, result)
+    return result
+
+
+def get_session_detail(sessionid):
+    """Return detailed stats for a single session."""
+    db = get_db()
+    cur = db.cursor()
+
+    session = cur.execute(
+        "SELECT sessionid, version, gametype, status, map, time, difficulty FROM sessiontable WHERE sessionid=?",
+        (sessionid,),
+    ).fetchone()
+    if not session:
+        db.close()
+        return None
+
+    status = session["status"]
+    if status == "Ended":
+        status = "Abort"
+
+    table_exists = cur.execute(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name=?", (sessionid,)
+    ).fetchone()
+    waves = []
+    if table_exists:
+        for row in cur.execute(f"SELECT wave, status, players FROM [{sessionid}] ORDER BY wave"):
+            try:
+                player_ids = json.loads(row["players"]) if row["players"] else []
+            except (TypeError, ValueError):
+                player_ids = []
+            waves.append({
+                "wave": row["wave"],
+                "status": row["status"],
+                "player_count": len(player_ids),
+            })
+
+    player_tables = [r[0] for r in cur.execute(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name LIKE 'player_%'"
+    ).fetchall() if r[0] != "playertable"]
+
+    participants = []
+    for ptable in player_tables:
+        has_perk = _table_has_column(cur, ptable, "perk")
+        perk_col = "perk" if has_perk else "''"
+        rows = cur.execute(
+            f"""SELECT COUNT(*) as waves_played,
+                    SUM(kills) as kills, SUM(kills_fp) as kills_fp, SUM(kills_sc) as kills_sc,
+                    SUM(damage) as damage,
+                    SUM(shotsfired) as shotsfired, SUM(meleeswings) as meleeswings,
+                    SUM(shotshit) as shotshit, SUM(shotsheadshot) as shotsheadshot,
+                    SUM(heals) as heals, SUM(damagetaken) as damagetaken, SUM(deaths) as deaths,
+                    GROUP_CONCAT(DISTINCT {perk_col}) as perks
+                FROM [{ptable}] WHERE sessionid = ?""",
+            (sessionid,),
+        ).fetchall()
+        for row in rows:
+            if not row["waves_played"]:
+                continue
+            p = cur.execute(
+                "SELECT playername, playerid FROM playertable WHERE playertableid=?", (ptable,)
+            ).fetchone()
+            if not p:
+                continue
+            perks_raw = (row["perks"] or "").split(",")
+            perks = [perk_display_name(pk) for pk in perks_raw if pk]
+            total_shots = (row["shotsfired"] or 0) + (row["meleeswings"] or 0)
+            accuracy = (row["shotshit"] or 0) / total_shots * 100 if total_shots > 0 else 0
+            participants.append({
+                "playertableid": ptable,
+                "playername": p["playername"],
+                "waves_played": row["waves_played"],
+                "kills": row["kills"] or 0,
+                "kills_fp": row["kills_fp"] or 0,
+                "kills_sc": row["kills_sc"] or 0,
+                "damage": row["damage"] or 0,
+                "heals": row["heals"] or 0,
+                "damagetaken": row["damagetaken"] or 0,
+                "deaths": row["deaths"] or 0,
+                "accuracy": round(accuracy, 1),
+                "perks": ", ".join(sorted(set(perks))) if perks else "Unknown",
+            })
+
+    participants.sort(key=lambda x: x["kills"], reverse=True)
+
+    db.close()
+    return {
+        "session": {
+            "sessionid": session["sessionid"],
+            "version": session["version"],
+            "gametype": session["gametype"],
+            "status": status,
+            "map": session["map"],
+            "time": session["time"],
+            "elapsed": elapsed_string(session["time"]),
+            "difficulty": session["difficulty"],
+        },
+        "waves": waves,
+        "participants": participants,
+    }

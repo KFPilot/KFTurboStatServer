@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% block title %}KFTurbo Stats — Session{% endblock %}
+{% block content %}
+<h1>{{ data.session.map }}</h1>
+<p class="text-muted">
+    <span title="{{ data.session.time }}">{{ data.session.elapsed }}</span>
+    &middot; {{ data.session.gametype | gametype_name }}
+    &middot; {{ data.session.difficulty | difficulty_name }}
+    &middot; v{{ data.session.version }}
+</p>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <div class="text-muted small">Result</div>
+                <div class="stat-highlight">
+                    {% if data.session.status == 'Win' %}
+                        <span class="badge bg-success fs-5">Win</span>
+                    {% elif data.session.status == 'Lose' %}
+                        <span class="badge bg-danger fs-5">Loss</span>
+                    {% elif data.session.status == 'Abort' %}
+                        <span class="badge bg-secondary fs-5">Abort</span>
+                    {% elif data.session.status == 'InProgress' %}
+                        <span class="badge bg-warning fs-5">In Progress</span>
+                    {% else %}
+                        <span class="badge bg-secondary fs-5">{{ data.session.status }}</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <div class="text-muted small">Waves Played</div>
+                <div class="stat-highlight">{{ data.waves | length }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <div class="text-muted small">Participants</div>
+                <div class="stat-highlight">{{ data.participants | length }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <div class="text-muted small">Total Kills</div>
+                <div class="stat-highlight">{{ "{:,}".format(data.participants | sum(attribute='kills')) }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if data.participants %}
+<h3>Participants</h3>
+<div class="table-responsive mb-4">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Player</th>
+                <th>Perks</th>
+                <th>Waves</th>
+                <th>Kills</th>
+                <th>FP Kills</th>
+                <th>SC Kills</th>
+                <th>Damage</th>
+                <th>Heals</th>
+                <th>Damage Taken</th>
+                <th>Deaths</th>
+                <th>Accuracy</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in data.participants %}
+            <tr>
+                <td><a href="/player/{{ p.playertableid }}">{{ p.playername }}</a></td>
+                <td>{{ p.perks }}</td>
+                <td>{{ p.waves_played }}</td>
+                <td>{{ "{:,}".format(p.kills) }}</td>
+                <td>{{ "{:,}".format(p.kills_fp) }}</td>
+                <td>{{ "{:,}".format(p.kills_sc) }}</td>
+                <td>{{ "{:,}".format(p.damage) }}</td>
+                <td>{{ "{:,}".format(p.heals) }}</td>
+                <td>{{ "{:,}".format(p.damagetaken) }}</td>
+                <td>{{ p.deaths }}</td>
+                <td>{{ p.accuracy }}%</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+{% if data.waves %}
+<h3>Wave Progression</h3>
+<div class="table-responsive">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Wave</th>
+                <th>Status</th>
+                <th>Players</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for w in data.waves %}
+            <tr>
+                <td>{{ w.wave }}</td>
+                <td>
+                    {% if w.status == 'Complete' %}
+                        <span class="badge bg-success">Complete</span>
+                    {% elif w.status == 'InProgress' %}
+                        <span class="badge bg-warning">In Progress</span>
+                    {% else %}
+                        <span class="badge bg-secondary">{{ w.status }}</span>
+                    {% endif %}
+                </td>
+                <td>{{ w.player_count }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+{% endblock %}
