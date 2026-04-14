@@ -190,14 +190,14 @@ class DatabaseManager:
             for Player in PlayerList:
                 Player = GetPlayerID(Player)
                 self.DatabaseCursor.execute(
-                    "UPDATE playertable SET wincount = wincount + 1 WHERE playerid = ?",
+                    "UPDATE playertable SET wincount = wincount + 1 WHERE playertableid = ?",
                     (Player,),
                 )
         elif JsonPayload["result"] == "Lose":
             for Player in PlayerList:
                 Player = GetPlayerID(Player)
                 self.DatabaseCursor.execute(
-                    "UPDATE playertable SET losecount = losecount + 1 WHERE playerid = ?",
+                    "UPDATE playertable SET losecount = losecount + 1 WHERE playertableid = ?",
                     (Player,),
                 )
 
