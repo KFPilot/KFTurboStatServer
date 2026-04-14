@@ -163,8 +163,8 @@ class DatabaseManager:
                 JsonPayload["result"] = "Abort"
 
         self.DatabaseCursor.execute(
-            "UPDATE " + SessionID + " SET status = ? WHERE status IS 'InProgress'",
-            (JsonPayload["result"],),
+            "UPDATE " + SessionID + " SET status = ? WHERE wave = ? OR status = 'InProgress'",
+            (JsonPayload["result"], JsonPayload["wavenum"]),
         )
         self.DatabaseCursor.execute(
             "UPDATE sessiontable SET status = ? WHERE sessionid IS ?",
@@ -225,7 +225,7 @@ class DatabaseManager:
     def ProcessWaveEndPayload(self, SessionID, JsonPayload):
         # print(SessionID, JsonPayload)
         self.DatabaseCursor.execute(
-            "UPDATE " + SessionID + " SET status = 'Complete' WHERE wave = ?",
+            "UPDATE " + SessionID + " SET status = 'Complete' WHERE wave = ? AND status = 'InProgress'",
             (JsonPayload["wavenum"],),
         )
 
