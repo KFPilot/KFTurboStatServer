@@ -54,6 +54,7 @@ def HandlePayload(JsonData):
 def HandleConnection(ClientSocket, Address):
     print("Started thread for connection at "+str(Address))
     Buffer = ""
+    OpenSession = None
     try:
         while (True):
             Data = ClientSocket.recv(8192)
@@ -91,9 +92,24 @@ def HandleConnection(ClientSocket, Address):
                     print("Malformed data - missing payload type or session ID.")
                     continue
 
+                if JsonData['type'] == 'gamebegin':
+                    OpenSession = JsonData['session']
+                elif JsonData['type'] == 'gameend':
+                    OpenSession = None
+
                 PayloadList.put(JsonData)
     except Exception as Error:
         print("Error "+str(Error)+" occurred for connection at "+str(Address))
+
+    if OpenSession is not None:
+        print("Connection at "+str(Address)+" closed with open session "+str(OpenSession)+" - marking aborted.")
+        PayloadList.put({
+            'type': 'gameend',
+            'session': OpenSession,
+            'wavenum': 0,
+            'result': 'aborted',
+        })
+
     print("Stopping thread for connection at "+str(Address))
 
 def StartServer():
