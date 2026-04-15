@@ -111,6 +111,7 @@ def HandleConnection(ClientSocket, Address):
                     continue
 
                 if JsonData['type'] == 'gamebegin':
+                    Log.info("Received session ID %s for %s", JsonData['session'], Address)
                     OpenSession = JsonData['session']
                 elif JsonData['type'] == 'gameend':
                     OpenSession = None
