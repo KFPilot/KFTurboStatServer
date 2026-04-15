@@ -14,8 +14,23 @@ import socket
 import socketserver
 import threading
 from queue import Queue
+import logging
 import DatabaseManager
 from argparse import ArgumentParser, ArgumentError
+from logging.handlers import RotatingFileHandler
+from datetime import datetime, timezone
+
+LogPath = os.path.join(os.path.dirname(os.path.abspath(__file__)), datetime.now(timezone.utc).strftime("%Y-%m-%dT%H-%M-%S") + ".log")
+logging.basicConfig(
+    level=logging.INFO,
+    format="[%(asctime)s] [%(levelname)s] %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+    handlers=[
+        RotatingFileHandler(LogPath, maxBytes=5 * 1024 * 1024, backupCount=5, encoding="utf-8"),
+        logging.StreamHandler(sys.stdout),
+    ],
+)
+Log = logging.getLogger("ConnectionManager")
 
 parser = ArgumentParser(description="Killing Floor Turbo Connection Manager. Spins up a Database Manager and manages incoming connections, routing payloads received to it.")
 parser.add_argument("-p", "--port", dest="port", type=int, required=True,
@@ -29,8 +44,11 @@ try:
 except SystemExit as e:
     # Handle invalid or missing arguments
     if e.code != 0:  # Non-zero exit code means an error
-        print("\nError: Missing required arguments or invalid inputs.")
+        Log.error("Missing required arguments or invalid inputs.")
         exit(1)
+
+if args.verbose:
+    Log.setLevel(logging.DEBUG)
 
 PayloadList = Queue()
 
@@ -41,7 +59,7 @@ ServerSocket.bind(("0.0.0.0", int(args.port)))
 ServerSocket.listen(int(args.maxcon))
 
 def ShutdownServer(signal_received, frame):
-    print("Shutting down server...")
+    Log.info("Shutting down server...")
     ServerSocket.close()
     sys.exit(0)
 
@@ -52,7 +70,7 @@ def HandlePayload(JsonData):
     Database.ProcessPayload(JsonData['session'], JsonData)
 
 def HandleConnection(ClientSocket, Address):
-    print("Started thread for connection at "+str(Address))
+    Log.info("Started thread for connection at %s", Address)
     Buffer = ""
     OpenSession = None
     try:
@@ -61,7 +79,7 @@ def HandleConnection(ClientSocket, Address):
             StringData = Data.decode('utf-8')
 
             if (StringData == ""):
-                print("Breaking out of connection loop for "+str(Address))
+                Log.info("Breaking out of connection loop for %s", Address)
                 break
 
             Buffer += StringData
@@ -75,21 +93,21 @@ def HandleConnection(ClientSocket, Address):
                     continue
 
                 if (args.verbose):
-                    print("RECEIVED: " + Line)
+                    Log.debug("RECEIVED: %s", Line)
 
                 JsonData = None
 
                 try:
                     JsonData = json.loads(Line)
                 except Exception:
-                    print("Error attempting to decode data:"+Line)
+                    Log.error("Error attempting to decode data: %s", Line)
                     continue
 
                 if (JsonData == None):
                     continue
 
                 if ((not 'type' in JsonData) or (not 'session' in JsonData)):
-                    print("Malformed data - missing payload type or session ID.")
+                    Log.warning("Malformed data - missing payload type or session ID.")
                     continue
 
                 if JsonData['type'] == 'gamebegin':
@@ -99,10 +117,10 @@ def HandleConnection(ClientSocket, Address):
 
                 PayloadList.put(JsonData)
     except Exception as Error:
-        print("Error "+str(Error)+" occurred for connection at "+str(Address))
+        Log.exception("Error %s occurred for connection at %s", Error, Address)
 
     if OpenSession is not None:
-        print("Connection at "+str(Address)+" closed with open session "+str(OpenSession)+" - marking aborted.")
+        Log.warning("Connection at %s closed with open session %s - marking aborted.", Address, OpenSession)
         PayloadList.put({
             'type': 'gameend',
             'session': OpenSession,
@@ -110,13 +128,13 @@ def HandleConnection(ClientSocket, Address):
             'result': 'aborted',
         })
 
-    print("Stopping thread for connection at "+str(Address))
+    Log.info("Stopping thread for connection at %s", Address)
 
 def StartServer():
-    print("Started server thread and waiting for connections...")
+    Log.info("Started server thread and waiting for connections...")
     while (True):
         (ClientSocket, Address) = ServerSocket.accept()
-        print("Accepted connection...")
+        Log.info("Accepted connection...")
         ClientSocket.settimeout(30)
         ConnectionThread = threading.Thread(target=HandleConnection, args=(ClientSocket, Address))
         ConnectionThread.daemon = True
