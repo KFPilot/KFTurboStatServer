@@ -16,7 +16,6 @@ export async function renderSessions(root, params) {
 
     root.innerHTML = `
         <h1>Sessions</h1>
-        <p class="text-muted">${sessions.length} session${sessions.length === 1 ? '' : 's'}. Click a row for details.</p>
         <div class="table-responsive">
             <table class="table table-striped table-sortable table-hover" id="sessionsTable">
                 <thead>

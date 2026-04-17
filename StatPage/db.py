@@ -292,7 +292,7 @@ def get_aggregate_overview(gametypes=None, difficulties=None):
 
     map_counts = []
     for row in cur.execute(
-        f"SELECT map, COUNT(*) as cnt FROM sessiontable{where_clause} GROUP BY map ORDER BY cnt DESC LIMIT 10",
+        f"SELECT map, COUNT(*) as cnt FROM sessiontable{where_clause} GROUP BY map ORDER BY cnt DESC LIMIT 15",
         params,
     ):
         map_counts.append({"map": row["map"], "count": row["cnt"]})
@@ -310,7 +310,7 @@ def get_aggregate_overview(gametypes=None, difficulties=None):
         parsed.append((dt or datetime.min, row))
     parsed.sort(key=lambda x: x[0], reverse=True)
     recent_sessions = []
-    for dt, row in parsed[:5]:
+    for dt, row in parsed[:15]:
         status = row["status"]
         if status == "Ended":
             status = "Abort"
@@ -327,12 +327,29 @@ def get_aggregate_overview(gametypes=None, difficulties=None):
             }
         )
 
+    waves_by_map = {}
+    for row in all_sessions:
+        sid = row["sessionid"]
+        table_exists = cur.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name=?", (sid,)
+        ).fetchone()
+        if not table_exists:
+            continue
+        wv = cur.execute(f"SELECT COUNT(*) FROM [{sid}]").fetchone()[0]
+        waves_by_map[row["map"]] = waves_by_map.get(row["map"], 0) + wv
+    top_maps_by_waves = sorted(
+        [{"map": m, "waves": w} for m, w in waves_by_map.items()],
+        key=lambda x: x["waves"],
+        reverse=True,
+    )[:15]
+
     db.close()
     result = {
         "total_sessions": total_sessions,
         "total_players": total_players,
         "status_counts": status_counts,
         "top_maps": map_counts,
+        "top_maps_by_waves": top_maps_by_waves,
         "recent_sessions": recent_sessions,
     }
     _set_cached(key, result)

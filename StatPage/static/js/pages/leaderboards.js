@@ -9,7 +9,6 @@ export async function renderLeaderboards(root, params) {
 
     root.innerHTML = `
         <h1>Player Leaderboards</h1>
-        <p class="text-muted">Click column headers to sort. Click a player name for details.</p>
         <div class="table-responsive">
             <table class="table table-striped table-sortable" id="leaderboard">
                 <thead>

@@ -69,9 +69,12 @@ function applyFilter() {
     const df = Array.from(document.querySelectorAll('#difficultyFilter button.active'))
         .map(b => b.dataset.difficulty);
 
-    const qs = `gametypes=${gt.join(',')}&difficulties=${df.join(',')}`;
+    const parts = [];
+    if (gt.length && gt.length !== allGametypes.length) parts.push(`gametypes=${gt.join(',')}`);
+    if (df.length && df.length !== allDifficulties.length) parts.push(`difficulties=${df.join(',')}`);
+
     const { path } = parseCurrentHash();
-    location.hash = '#' + path + '?' + qs;
+    location.hash = '#' + path + (parts.length ? '?' + parts.join('&') : '');
 }
 
 function parseCurrentHash() {

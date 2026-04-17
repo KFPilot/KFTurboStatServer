@@ -49,19 +49,7 @@ export async function renderCards(root) {
                     <th data-col="losses" data-type="number">Losses</th>
                     <th data-col="win_rate" data-type="number">Win Rate</th>
                 </tr></thead>
-                <tbody>
-                    ${cards.map(c => `
-                        <tr>
-                            <td title="${escapeHtml(c.cardid)}">${escapeHtml(cardLabel(c.cardid))}</td>
-                            <td>${c.shown}</td>
-                            <td>${c.selected}</td>
-                            <td>${c.pick_rate}%</td>
-                            <td>${c.wins}</td>
-                            <td>${c.losses}</td>
-                            <td>${c.win_rate}%</td>
-                        </tr>
-                    `).join('')}
-                </tbody>
+                <tbody></tbody>
             </table>
         </div>
     `;
@@ -135,7 +123,24 @@ export async function renderCards(root) {
         });
     }
 
+    const tbody = document.querySelector('#cardTable tbody');
+    function buildTable(category) {
+        const filtered = filterCards(category);
+        tbody.innerHTML = filtered.map(c => `
+            <tr>
+                <td title="${escapeHtml(c.cardid)}">${escapeHtml(cardLabel(c.cardid))}</td>
+                <td>${c.shown}</td>
+                <td>${c.selected}</td>
+                <td>${c.pick_rate}%</td>
+                <td>${c.wins}</td>
+                <td>${c.losses}</td>
+                <td>${c.win_rate}%</td>
+            </tr>
+        `).join('');
+    }
+
     buildCharts('all');
+    buildTable('all');
 
     document.getElementById('cardCategoryFilter').addEventListener('click', function(e) {
         const btn = e.target.closest('button[data-category]');
@@ -143,6 +148,7 @@ export async function renderCards(root) {
         this.querySelectorAll('button').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         buildCharts(btn.dataset.category);
+        buildTable(btn.dataset.category);
     });
 
     sortableTable(document.getElementById('cardTable'));

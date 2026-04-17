@@ -27,16 +27,22 @@ export async function renderOverview(root, params) {
 
     const charts = overview.top_maps && overview.top_maps.length ? `
         <div class="row mb-4">
-            <div class="col-md-6">
+            <div class="col-md-4">
                 <div class="card"><div class="card-body">
                     <h5 class="card-title">Game Results</h5>
-                    <canvas id="statusChart" height="250"></canvas>
+                    <div style="height: 400px;"><canvas id="statusChart"></canvas></div>
                 </div></div>
             </div>
-            <div class="col-md-6">
+            <div class="col-md-4">
                 <div class="card"><div class="card-body">
-                    <h5 class="card-title">Top Maps</h5>
-                    <canvas id="mapChart" height="250"></canvas>
+                    <h5 class="card-title">Top Maps (Games)</h5>
+                    <div style="height: 400px;"><canvas id="mapChart"></canvas></div>
+                </div></div>
+            </div>
+            <div class="col-md-4">
+                <div class="card"><div class="card-body">
+                    <h5 class="card-title">Top Maps (Waves)</h5>
+                    <div style="height: 400px;"><canvas id="mapWavesChart"></canvas></div>
                 </div></div>
             </div>
         </div>
@@ -46,13 +52,13 @@ export async function renderOverview(root, params) {
         <div class="card"><div class="card-body">
             <h5 class="card-title">Recent Sessions</h5>
             <div class="table-responsive">
-                <table class="table table-striped mb-0">
+                <table class="table table-striped table-hover mb-0" id="recentSessionsTable">
                     <thead><tr>
                         <th>Time</th><th>Map</th><th>Mode</th><th>Difficulty</th><th>Result</th><th>Version</th>
                     </tr></thead>
                     <tbody>
                         ${overview.recent_sessions.map(s => `
-                            <tr>
+                            <tr data-sessionid="${escapeHtml(s.sessionid)}" style="cursor: pointer;">
                                 <td title="${escapeHtml(s.time)}">${escapeHtml(s.elapsed)}</td>
                                 <td>${escapeHtml(s.map)}</td>
                                 <td>${escapeHtml(gametypeName(s.gametype))}</td>
@@ -72,6 +78,16 @@ export async function renderOverview(root, params) {
     if (overview.top_maps && overview.top_maps.length) {
         drawStatusChart(overview.status_counts);
         drawMapChart(overview.top_maps);
+        drawMapWavesChart(overview.top_maps_by_waves || []);
+    }
+
+    const recentTable = document.getElementById('recentSessionsTable');
+    if (recentTable) {
+        recentTable.querySelector('tbody').addEventListener('click', e => {
+            const tr = e.target.closest('tr[data-sessionid]');
+            if (!tr) return;
+            location.hash = '#/session/' + encodeURIComponent(tr.dataset.sessionid);
+        });
     }
 }
 
@@ -100,7 +116,11 @@ function drawStatusChart(statusData) {
                 borderColor: '#161b22'
             }]
         },
-        options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'bottom' } }
+        }
     });
 }
 
@@ -117,6 +137,27 @@ function drawMapChart(mapData) {
         },
         options: {
             responsive: true,
+            maintainAspectRatio: false,
+            indexAxis: 'y',
+            plugins: { legend: { display: false } }
+        }
+    });
+}
+
+function drawMapWavesChart(mapData) {
+    new Chart(document.getElementById('mapWavesChart'), {
+        type: 'bar',
+        data: {
+            labels: mapData.map(m => m.map),
+            datasets: [{
+                label: 'Waves Played',
+                data: mapData.map(m => m.waves),
+                backgroundColor: '#6639a6'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
             indexAxis: 'y',
             plugins: { legend: { display: false } }
         }
