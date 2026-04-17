@@ -117,10 +117,7 @@ function updateLinkStates() {
     });
     const { path } = parseCurrentHash();
     const gt = document.getElementById('gametypeFilter');
-    if (gt) {
-        if (path === '/cards') gt.style.setProperty('display', 'none', 'important');
-        else gt.style.removeProperty('display');
-    }
+    if (gt) gt.classList.toggle('filter-hidden', path === '/cards');
 }
 
 export function gametypeName(code) {

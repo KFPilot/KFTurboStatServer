@@ -13,6 +13,19 @@ html {
     overflow-y: scroll;
 }
 
+#root {
+    transition: opacity 0.09s ease;
+}
+
+#gametypeFilter {
+    transition: opacity 0.15s ease;
+}
+
+#gametypeFilter.filter-hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
 body {
     min-height: 100vh;
     background: var(--bs-body-bg);

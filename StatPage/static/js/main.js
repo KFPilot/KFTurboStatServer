@@ -28,7 +28,10 @@ function parseHash() {
 
 async function dispatch() {
     const { path, params } = parseHash();
-    root.innerHTML = '<p class="text-muted">Loading…</p>';
+
+    root.style.opacity = '0';
+    await new Promise(r => setTimeout(r, 90));
+
     for (const r of routes) {
         const m = path.match(r.pattern);
         if (m) {
@@ -39,11 +42,14 @@ async function dispatch() {
                 console.error(err);
                 root.innerHTML = `<div class="alert alert-danger">Error: ${escapeHtml(err.message)}</div>`;
             }
+            root.style.opacity = '1';
             return;
         }
     }
+
     document.title = 'Turbo Stats — Not Found';
     root.innerHTML = '<h1>Not Found</h1>';
+    root.style.opacity = '1';
 }
 
 export async function fetchJson(path, params) {
