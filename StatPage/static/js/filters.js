@@ -64,16 +64,14 @@ function bindFilter(id, attr) {
 }
 
 function applyFilter() {
-    const params = new URLSearchParams();
-    const gtActive = document.querySelectorAll('#gametypeFilter button.active');
-    if (gtActive.length) gtActive.forEach(b => params.append('gametypes', b.dataset.gametype));
-    else params.append('gametypes', '');
-    const dfActive = document.querySelectorAll('#difficultyFilter button.active');
-    if (dfActive.length) dfActive.forEach(b => params.append('difficulties', b.dataset.difficulty));
-    else params.append('difficulties', '');
+    const gt = Array.from(document.querySelectorAll('#gametypeFilter button.active'))
+        .map(b => b.dataset.gametype);
+    const df = Array.from(document.querySelectorAll('#difficultyFilter button.active'))
+        .map(b => b.dataset.difficulty);
 
+    const qs = `gametypes=${gt.join(',')}&difficulties=${df.join(',')}`;
     const { path } = parseCurrentHash();
-    location.hash = '#' + path + '?' + params.toString();
+    location.hash = '#' + path + '?' + qs;
 }
 
 function parseCurrentHash() {
@@ -86,14 +84,16 @@ function getSelectedGametypes() {
     const { query } = parseCurrentHash();
     const p = new URLSearchParams(query);
     if (!p.has('gametypes')) return [...allGametypes];
-    return p.getAll('gametypes').filter(v => v && allGametypes.includes(v));
+    const raw = p.get('gametypes') || '';
+    return raw.split(',').filter(v => v && allGametypes.includes(v));
 }
 
 function getSelectedDifficulties() {
     const { query } = parseCurrentHash();
     const p = new URLSearchParams(query);
     if (!p.has('difficulties')) return [...allDifficulties];
-    return p.getAll('difficulties').map(Number).filter(v => allDifficulties.includes(v));
+    const raw = p.get('difficulties') || '';
+    return raw.split(',').map(Number).filter(v => allDifficulties.includes(v));
 }
 
 export function getFilterQS() {

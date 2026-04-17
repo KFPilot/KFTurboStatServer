@@ -21,19 +21,21 @@ app = FastAPI(title="KFTurbo Stats API")
 
 
 def _gametypes_filter(request: Request):
-    if "gametypes" not in request.query_params:
+    raw = request.query_params.get("gametypes")
+    if raw is None:
         return None
     all_gt = db.get_gametypes()
-    selected = [v for v in request.query_params.getlist("gametypes") if v in all_gt]
+    selected = [v for v in raw.split(",") if v in all_gt]
     return selected if selected else []
 
 
 def _difficulties_filter(request: Request):
-    if "difficulties" not in request.query_params:
+    raw = request.query_params.get("difficulties")
+    if raw is None:
         return None
     all_diff = db.get_difficulties()
     selected = []
-    for d in request.query_params.getlist("difficulties"):
+    for d in raw.split(","):
         try:
             v = int(d)
             if v in all_diff:
