@@ -25,6 +25,6 @@ services:
     environment:
       TURBO_DB_PATH: "/app/data/TurboDatabase.db"
       TURBO_DASHBOARD_PORT: "${TURBO_DASHBOARD_PORT:-5000}"
-    command: sh -c "python StatPage/app.py"
+    command: sh -c "python StatPage/api.py"
     volumes:
       - ./data:/app/data

@@ -9,6 +9,10 @@
     --table-hover: rgba(88, 166, 255, 0.06);
 }
 
+html {
+    overflow-y: scroll;
+}
+
 body {
     min-height: 100vh;
     background: var(--bs-body-bg);
