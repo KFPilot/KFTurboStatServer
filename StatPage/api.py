@@ -133,7 +133,20 @@ def spa(full_path: str = ""):
 
 
 if __name__ == "__main__":
+    import argparse
     import uvicorn
 
-    port = int(os.environ.get("TURBO_DASHBOARD_PORT", "5000"))
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    parser = argparse.ArgumentParser(description="KFTurbo Stats API server")
+    parser.add_argument(
+        "--host",
+        default=os.environ.get("TURBO_DASHBOARD_HOST", "0.0.0.0"),
+        help="Host to bind (default: 0.0.0.0 or $TURBO_DASHBOARD_HOST)",
+    )
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=int(os.environ.get("TURBO_DASHBOARD_PORT", "5000")),
+        help="Port to bind (default: 5000 or $TURBO_DASHBOARD_PORT)",
+    )
+    args = parser.parse_args()
+    uvicorn.run(app, host=args.host, port=args.port)
