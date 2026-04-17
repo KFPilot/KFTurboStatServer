@@ -1,5 +1,5 @@
 import { fetchJson } from '../main.js';
-import { fmt, escapeHtml } from '../format.js';
+import { fmt, escapeHtml, sortableTable } from '../format.js';
 
 const ALL_PERKS = [
     { name: 'Sharpshooter',       color: '#b62324' },
@@ -14,6 +14,10 @@ const ALL_PERKS = [
 function perkColor(name) {
     const entry = ALL_PERKS.find(p => p.name === name);
     return entry ? entry.color : '#636e7b';
+}
+
+function wrapLabel(name) {
+    return name.includes(' ') ? name.split(' ') : name;
 }
 
 export async function renderPerks(root, params) {
@@ -36,13 +40,48 @@ export async function renderPerks(root, params) {
                     <canvas id="usageChart" height="300"></canvas>
                 </div></div>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-8">
+                <div class="card h-100"><div class="card-body">
+                    <h5 class="card-title">Averages</h5>
+                    <div class="table-responsive">
+                        <table class="table table-striped table-sortable mb-0" id="perksTable">
+                            <thead><tr>
+                                <th data-type="string">Perk</th>
+                                <th data-type="number">Players</th>
+                                <th data-type="number">Waves</th>
+                                <th data-type="number">Kills</th>
+                                <th data-type="number">Kills/Wave</th>
+                                <th data-type="number">Damage/Wave</th>
+                                <th data-type="number">Heals/Wave</th>
+                                <th data-type="number">Accuracy</th>
+                            </tr></thead>
+                            <tbody>
+                                ${perks.map(p => `
+                                    <tr>
+                                        <td><strong>${escapeHtml(p.perk)}</strong></td>
+                                        <td>${p.unique_players}</td>
+                                        <td>${fmt(p.waves)}</td>
+                                        <td>${fmt(p.kills)}</td>
+                                        <td>${p.kills_per_wave}</td>
+                                        <td>${damageFmt(p.damage_per_wave)}</td>
+                                        <td>${p.heals_per_wave}</td>
+                                        <td>${p.accuracy}%</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div></div>
+            </div>
+        </div>
+        <div class="row mb-4">
+            <div class="col-md-6">
                 <div class="card h-100"><div class="card-body">
                     <h5 class="card-title">Kill Distribution</h5>
                     <canvas id="killChart" height="300"></canvas>
                 </div></div>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-6">
                 <div class="card h-100"><div class="card-body">
                     <h5 class="card-title">Damage Output</h5>
                     <canvas id="damageChart" height="300"></canvas>
@@ -63,30 +102,9 @@ export async function renderPerks(root, params) {
                 </div></div>
             </div>
         </div>
-        <h3>Averages</h3>
-        <div class="table-responsive">
-            <table class="table table-striped">
-                <thead><tr>
-                    <th>Perk</th><th>Unique Players</th><th>Waves Played</th><th>Total Kills</th>
-                    <th>Kills/Wave</th><th>Damage/Wave</th><th>Heals/Wave</th><th>Accuracy</th>
-                </tr></thead>
-                <tbody>
-                    ${perks.map(p => `
-                        <tr>
-                            <td><strong>${escapeHtml(p.perk)}</strong></td>
-                            <td>${p.unique_players}</td>
-                            <td>${fmt(p.waves)}</td>
-                            <td>${fmt(p.kills)}</td>
-                            <td>${p.kills_per_wave}</td>
-                            <td>${damageFmt(p.damage_per_wave)}</td>
-                            <td>${p.heals_per_wave}</td>
-                            <td>${p.accuracy}%</td>
-                        </tr>
-                    `).join('')}
-                </tbody>
-            </table>
-        </div>
     `;
+
+    sortableTable(document.getElementById('perksTable'));
 
     const perkDataMap = {};
     perks.forEach(p => { perkDataMap[p.perk] = p; });
@@ -112,7 +130,7 @@ export async function renderPerks(root, params) {
     new Chart(document.getElementById('killChart'), {
         type: 'bar',
         data: {
-            labels: perks.map(p => p.perk),
+            labels: perks.map(p => wrapLabel(p.perk)),
             datasets: [
                 { label: 'Other', data: perks.map(p => p.kills_other), backgroundColor: '#484f58' },
                 { label: 'Scrake', data: perks.map(p => p.kills_sc), backgroundColor: '#9e6a03' },
@@ -157,7 +175,7 @@ export async function renderPerks(root, params) {
     new Chart(document.getElementById('damageChart'), {
         type: 'bar',
         data: {
-            labels: perks.map(p => p.perk),
+            labels: perks.map(p => wrapLabel(p.perk)),
             datasets: [
                 { label: 'Other', data: perks.map(p => p.damage - p.damage_fp - p.damage_sc), backgroundColor: '#484f58' },
                 { label: 'Scrake', data: perks.map(p => p.damage_sc), backgroundColor: '#9e6a03' },

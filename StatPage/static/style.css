@@ -97,6 +97,11 @@ body {
     color: var(--accent);
 }
 
+.table-sortable th[data-type]::after {
+    content: " \25B2";
+    color: transparent;
+}
+
 .table-sortable th.sorted-asc::after {
     content: " \25B2";
     color: var(--accent);
