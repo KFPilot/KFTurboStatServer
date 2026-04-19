@@ -20,7 +20,9 @@ from argparse import ArgumentParser, ArgumentError
 from logging.handlers import RotatingFileHandler
 from datetime import datetime, timezone
 
-LogPath = os.path.join(os.path.dirname(os.path.abspath(__file__)), datetime.now(timezone.utc).strftime("%Y-%m-%dT%H-%M-%S") + ".log")
+LogDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Logs")
+os.makedirs(LogDir, exist_ok=True)
+LogPath = os.path.join(LogDir, datetime.now(timezone.utc).strftime("%Y-%m-%dT%H-%M-%S") + ".log")
 logging.basicConfig(
     level=logging.INFO,
     format="[%(asctime)s] [%(levelname)s] %(message)s",
